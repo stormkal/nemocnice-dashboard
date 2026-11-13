@@ -1,0 +1,92 @@
+// Stáhne stavové stránky ČSSZ, eZdraví a ePreskripce a uloží souhrn do out/status.json
+import { chromium } from "playwright";
+import fs from "fs";
+
+const lines = t => t.split("\n").map(s => s.replace(/\s+/g, " ").trim()).filter(Boolean);
+const METRIC = /^(\d|[<>]?\s*\d)|%$|https?:\/\/|^(Posledních|Volání|Chybovost|Odmítnuto|Podíl|Dostupnost|Reálný|Test |Celkem|Průměr)/i;
+
+function nameBefore(L, i, statusRe) {
+  for (let k = i - 1; k >= Math.max(0, i - 8); k--) {
+    if (!METRIC.test(L[k]) && !statusRe.test(L[k]) && L[k].length > 2 && L[k].length < 120) return L[k];
+  }
+  return "?";
+}
+function noteAfter(L, i) {
+  for (let k = i + 1; k <= Math.min(L.length - 1, i + 5); k++)
+    if (/hlásí|výpad|omezen|nedostup|snížen|odstáv|porucha/i.test(L[k])) return L[k];
+  return "";
+}
+
+// eZdraví: každá služba má štítek "V pořádku" / "Ke sledování" / …
+function parseEzdravi({ text }) {
+  const L = lines(text);
+  const ST = /^(v pořádku|ke sledování|nedostupn\S*|výpadek|omezen\S*|mimo provoz|porucha|degrad\S*|nefunkční|odstávka)$/i;
+  const items = [];
+  L.forEach((l, i) => { if (ST.test(l)) items.push({ name: nameBefore(L, i, ST), status: l, note: noteAfter(L, i) }); });
+  const issues = items.filter(x => !/^v pořádku$/i.test(x.status));
+  return { checked: items.length, issues };
+}
+
+// ČSSZ: stavy V POŘÁDKU / VÝSKYT CHYB / MNOHO CHYB (legendu přeskakujeme)
+function parseCssz({ text }) {
+  let L = lines(text);
+  const leg = L.findIndex(l => /^(legenda|vysvětlivky|význam)/i.test(l));
+  const ST = /^(v pořádku|výskyt chyb|mnoho chyb|nedostupn\S*|výpadek|odstávka|mimo provoz)$/i;
+  const items = [];
+  L.forEach((l, i) => {
+    if (!ST.test(l)) return;
+    if (leg >= 0 && i > leg) return;
+    const next = L[i + 1] || "";
+    if (/^(nebylo|zvýšen|většina|služba se chová|byl zjištěn)/i.test(next)) return; // popis v legendě
+    items.push({ name: nameBefore(L, i, ST), status: l, note: "" });
+  });
+  const issues = items.filter(x => !/^v pořádku$/i.test(x.status));
+  return { checked: items.length, issues };
+}
+
+// ePreskripce: banner "STAV SYSTÉMU …"
+function parseEpreskripce({ text }) {
+  const L = lines(text);
+  const i = L.findIndex(l => /stav systému/i.test(l));
+  if (i < 0) return { checked: 0, issues: [] };
+  const head = L[i], detail = L[i + 1] || "";
+  const ok = /bez omezení/i.test(head + " " + detail);
+  return { checked: 1, issues: ok ? [] : [{ name: "eRecept", status: head.replace(/^stav systému:?\s*/i, "") || head, note: detail.slice(0, 200) }] };
+}
+
+const SOURCES = [
+  { id: "cssz", name: "ČSSZ", url: "https://www.cssz.gov.cz/status.html", parse: parseCssz },
+  { id: "ezdravi", name: "eZdraví", url: "https://www.ezdravi.gov.cz/katalog-sluzeb/dostupnost", parse: parseEzdravi },
+  { id: "epreskripce", name: "eRecept", url: "https://epreskripce.gov.cz/", parse: parseEpreskripce },
+];
+
+fs.mkdirSync("out/debug", { recursive: true });
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ locale: "cs-CZ", timezoneId: "Europe/Prague",
+  userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36" });
+const result = { updated: new Date().toISOString(), sources: {} };
+
+for (const s of SOURCES) {
+  const page = await ctx.newPage();
+  const xhr = [];
+  page.on("response", async r => {
+    const ct = r.headers()["content-type"] || "";
+    if (/json/.test(ct)) { try { xhr.push({ url: r.url(), body: (await r.text()).slice(0, 4000) }); } catch {} }
+  });
+  try {
+    const resp = await page.goto(s.url, { waitUntil: "networkidle", timeout: 45000 });
+    await page.waitForTimeout(3000);
+    const text = await page.evaluate(() => document.body.innerText);
+    fs.writeFileSync(`out/debug/${s.id}.txt`, text);
+    fs.writeFileSync(`out/debug/${s.id}-xhr.json`, JSON.stringify(xhr, null, 1));
+    const r = s.parse({ text, xhr });
+    result.sources[s.id] = { name: s.name, url: s.url, http: resp?.status(), ok: r.issues.length === 0,
+      parsed: r.checked > 0, checked: r.checked, issues: r.issues };
+  } catch (e) {
+    result.sources[s.id] = { name: s.name, url: s.url, ok: null, error: String(e.message || e).slice(0, 200) };
+  }
+  await page.close();
+}
+await browser.close();
+fs.writeFileSync("out/status.json", JSON.stringify(result, null, 1));
+console.log(JSON.stringify(result, null, 1));

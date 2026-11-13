@@ -1,0 +1,35 @@
+name: status
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+concurrency:
+  group: status
+  cancel-in-progress: false
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    container: mcr.microsoft.com/playwright:v1.49.0-noble
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-audit --no-fund
+      - run: node scrape.mjs
+      - name: Publish to data branch
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          command -v git >/dev/null || (apt-get update -qq && apt-get install -y -qq git curl)
+          cd out
+          git init -q -b data
+          git config user.name "status-bot"
+          git config user.email "status-bot@users.noreply.github.com"
+          git add -A
+          git commit -qm "status $(date -u +%FT%TZ)"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${REPO}.git" data
+          curl -s "https://purge.jsdelivr.net/gh/${REPO}@data/status.json" > /dev/null || true

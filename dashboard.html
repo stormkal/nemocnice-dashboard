@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard</title>
+<style>
+  :root{
+    --bg:#0b0f14; --card:#141a22; --card2:#1a222c; --line:#253040;
+    --text:#e8edf3; --muted:#8a97a8; --accent:#4cc2ff; --green:#3fd68b; --amber:#ffb84d; --red:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--text);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;overflow:hidden}
+  .num{font-variant-numeric:tabular-nums}
+  .grid{display:grid;height:100vh;padding:1.2vh 1vw;gap:1.2vh 1vw;
+    grid-template-columns:1.3fr 1.3fr 1fr 1fr;grid-template-rows:auto auto 1fr}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.6vh 1.2vw;
+    display:flex;flex-direction:column;min-height:0;position:relative}
+  .label{font-size:clamp(11px,.75vw,15px);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .muted{color:var(--muted)}
+  .small{font-size:clamp(11px,.75vw,15px)}
+
+  /* Hodiny */
+  .clock .time{font-size:clamp(40px,4.8vw,120px);font-weight:300;line-height:1;margin-top:.6vh;letter-spacing:-.02em}
+  .clock .time .sec{font-size:.42em;color:var(--muted);margin-left:.15em}
+  .clock .date{font-size:clamp(15px,1.25vw,28px);margin-top:1vh;font-weight:500}
+  .clock .sub{margin-top:.6vh;font-size:clamp(12px,.9vw,18px);color:var(--muted)}
+  .pill{display:inline-flex;align-items:center;gap:.4em;padding:.25em .7em;border-radius:99px;font-size:clamp(11px,.8vw,16px);
+    background:var(--card2);border:1px solid var(--line);margin-top:1vh;width:fit-content}
+  .dot{width:.6em;height:.6em;border-radius:50%;background:var(--muted)}
+  .dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+  .dot.off{background:var(--red)}
+
+  /* Info */
+  .info .big{font-size:clamp(18px,1.6vw,34px);font-weight:600;margin-top:.3vh}
+  .info .row{display:flex;justify-content:space-between;align-items:baseline;padding:.45vh 0;border-bottom:1px solid var(--line)}
+  .info .row:last-child{border-bottom:0}
+  .info .v{font-size:clamp(13px,1vw,20px);text-align:right}
+
+  /* Počasí */
+  .w-head{display:flex;justify-content:space-between;align-items:baseline}
+  .w-now{display:flex;align-items:center;gap:1.2vw;margin-top:1vh}
+  .w-icon{font-size:clamp(48px,5.5vw,120px);line-height:1}
+  .w-temp{font-size:clamp(44px,5vw,110px);font-weight:300;line-height:1}
+  .w-desc{font-size:clamp(14px,1.15vw,24px);font-weight:500}
+  .w-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:.6vw;margin-top:1.6vh}
+  .w-meta div{background:var(--card2);border-radius:10px;padding:.9vh .6vw}
+  .w-meta b{display:block;white-space:nowrap;font-size:clamp(13px,1vw,20px);font-weight:600;margin-top:.2vh}
+  .w-hours{display:grid;grid-template-columns:repeat(8,1fr);gap:.4vw;margin-top:2vh;text-align:center;flex:1;max-height:22vh}
+  .w-hours>div{display:flex;flex-direction:column;justify-content:center}
+  .w-hours div{padding:.7vh 0;border-radius:8px;background:var(--card2)}
+  .w-hours .h{font-size:clamp(11px,.75vw,15px);color:var(--muted)}
+  .w-hours .i{font-size:clamp(16px,1.4vw,30px);margin:.3vh 0}
+  .w-hours .t{font-size:clamp(12px,.95vw,19px);font-weight:600}
+  .w-hours .p{font-size:clamp(10px,.68vw,13px);color:var(--accent);min-height:1.2em}
+  .w-days{display:grid;grid-template-columns:repeat(3,1fr);gap:.6vw;margin-top:auto;padding-top:1.4vh}
+  .w-days>div{background:var(--card2);border-radius:10px;padding:.9vh .5vw;display:flex;flex-direction:column;align-items:center;gap:.2vh;text-align:center}
+  .w-days .i{font-size:clamp(20px,1.9vw,40px)}
+  .w-days .d{font-size:clamp(12px,.85vw,17px);color:var(--muted)}
+  .w-days .t{font-size:clamp(13px,1vw,20px);font-weight:600}
+  .w-upd{position:absolute;right:1.2vw;bottom:.6vh;font-size:11px;color:#56627a}
+  .err{color:var(--amber);margin-top:2vh}
+
+  /* Pravý sloupec */
+  .col{display:flex;flex-direction:column;gap:1.2vh;min-height:0}
+  .rates .r{display:grid;grid-template-columns:auto minmax(30px,1fr) auto auto;align-items:center;gap:.8vw;padding:.7vh 0;border-bottom:1px solid var(--line)}
+  .rates .r:last-of-type{border-bottom:0}
+  .rates .cur{white-space:nowrap;font-weight:700;font-size:clamp(13px,1vw,20px)}
+  .rates .val{font-size:clamp(14px,1.1vw,24px);font-weight:600;text-align:right}
+  .rates .chg{white-space:nowrap;font-size:clamp(11px,.75vw,15px);text-align:right}
+  .up{color:var(--red)} .down{color:var(--green)}
+  svg.spark{width:100%;height:clamp(18px,2.4vh,30px)}
+
+  .shift .bar{height:clamp(8px,1.1vh,14px);background:var(--card2);border-radius:99px;overflow:hidden;margin:1vh 0 .6vh}
+  .shift .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:99px;transition:width 1s}
+  .shift .left{font-size:clamp(16px,1.4vw,30px);font-weight:600;white-space:nowrap}
+  .shift .edit{position:absolute;top:1.4vh;right:1vw;background:none;border:1px solid var(--line);color:var(--muted);
+    border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12px}
+  .shift .form{display:none;gap:6px;align-items:center;margin-top:.8vh;flex-wrap:wrap}
+  .shift .form.open{display:flex}
+  .shift input{background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:3px 6px;font:inherit}
+  .shift button.ok{background:var(--accent);color:#000;border:0;border-radius:6px;padding:4px 10px;cursor:pointer;font-weight:600}
+
+  .notes{flex:1;min-height:12vh}
+  .notes textarea{flex:1;width:100%;margin-top:.8vh;background:transparent;color:var(--text);border:0;resize:none;outline:none;
+    font:inherit;font-size:clamp(13px,.95vw,19px);line-height:1.45}
+  .notes textarea::placeholder{color:#4b5668}
+
+  .hol{display:flex;justify-content:space-between;gap:.6vw;padding:.3vh 0;font-size:clamp(11px,.8vw,16px);white-space:nowrap}
+  .zone-h{font-size:clamp(11px,.8vw,16px);font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:0 .2vw .2vh;
+    border-bottom:2px solid var(--accent);color:var(--accent);margin-bottom:-.4vh}
+  .kal.clock .time{font-size:clamp(34px,3.6vw,90px)}
+  .zone-h.kal{border-color:#f5a623;color:#f5a623}
+  .card.kal{border-top:2px solid rgba(245,166,35,.55)}
+  .clock .shift{position:relative;margin-top:auto;padding-top:1.2vh;border-top:1px solid var(--line)}
+  .clock .shift .edit{top:1vh;right:0}
+  .svc.warn{color:var(--amber);text-decoration:none}
+  .svc .note{grid-column:2/4;font-size:clamp(10px,.7vw,13px);color:var(--muted);margin-top:-.3vh}
+  /* Nowcast */
+  .w-now2{margin-top:1.4vh;padding:.9vh .8vw;border-radius:10px;background:var(--card2);font-size:clamp(12px,.9vw,18px)}
+  .w-now2.wet{background:rgba(76,194,255,.12);border:1px solid rgba(76,194,255,.35)}
+
+  /* Služby */
+  .svc-list{margin-top:.8vh;overflow:auto;min-height:0}
+  .svc{display:grid;grid-template-columns:auto 1fr auto;gap:.6vw;align-items:center;padding:.55vh 0;border-bottom:1px solid var(--line);
+    font-size:clamp(12px,.9vw,18px)}
+  .svc:last-child{border-bottom:0}
+  .svc .ms{font-size:clamp(10px,.7vw,14px);color:var(--muted)}
+  .svc.bad{color:var(--red);text-decoration:none}
+  .svc-ok{display:flex;align-items:center;gap:.6vw;font-size:clamp(18px,1.6vw,34px);font-weight:600;color:var(--green);margin-top:1vh}
+  .svc-down{font-size:clamp(14px,1.1vw,22px);font-weight:700;color:var(--red);margin-bottom:.6vh}
+  .hint{font-size:clamp(11px,.75vw,15px);color:var(--muted);margin-top:1vh}
+
+  /* Radar */
+  .radar{flex:1;min-height:30vh;padding:0;overflow:hidden}
+  .radar iframe{border:0;width:100%;height:100%;border-radius:14px;background:var(--card2)}
+  .radar .label{position:absolute;top:1vh;left:1vw;z-index:2;background:rgba(11,15,20,.75);padding:3px 8px;border-radius:6px}
+  .radar .fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:2vw;
+    color:var(--muted);font-size:13px;z-index:0}
+  .radar iframe{position:relative;z-index:1}
+
+  /* Výstrahy */
+  .alert{display:flex;gap:.5vw;align-items:baseline;padding:.25vh 0;font-size:clamp(11px,.78vw,15px)}
+  .alert .ic{font-size:1.2em;line-height:1.2}
+  .alert.warn{color:var(--amber)} .alert.bad{color:var(--red)} .alert.ok{color:var(--green)}
+  .alert small{color:var(--muted);font-size:.9em;margin-left:.4em}
+
+  /* Odkazy */
+  .links{display:grid;grid-template-columns:1fr 1fr;gap:.5vw;margin-top:.8vh}
+  .links a{display:flex;align-items:center;gap:.5vw;padding:.7vh .6vw;border-radius:8px;background:var(--card2);color:var(--text);
+    text-decoration:none;font-size:clamp(12px,.85vw,17px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid transparent}
+  .links a:hover{border-color:var(--accent)}
+  .links a b{display:inline-flex;align-items:center;justify-content:center;min-width:1.6em;height:1.6em;border-radius:6px;
+    background:var(--line);color:var(--accent);font-size:.85em}
+
+  /* Čína svátky */
+  .cn-hol{margin-top:1vh;font-size:clamp(12px,.85vw,17px);color:var(--muted)}
+  .cn-hol.warn{color:var(--amber)}
+
+  /* Nastavení */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:10}
+  .modal.open{display:flex}
+  .modal .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;width:min(900px,92vw);max-height:90vh;overflow:auto}
+  .modal h3{margin-bottom:6px} .modal p{color:var(--muted);font-size:13px;margin-bottom:10px}
+  .modal textarea{width:100%;height:180px;background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:8px;
+    padding:8px;font:13px/1.5 Consolas,monospace;margin-bottom:14px}
+  .modal .btns{display:flex;gap:8px;justify-content:flex-end}
+  .modal button{border:0;border-radius:8px;padding:8px 16px;cursor:pointer;font-weight:600}
+  .modal .save{background:var(--accent);color:#000} .modal .cancel{background:var(--card2);color:var(--text)}
+
+  .fs{position:fixed;right:10px;bottom:8px;background:none;border:0;color:#3a4558;cursor:pointer;font-size:12px}
+  .fs:hover{color:var(--muted)}
+  .cfg{right:150px}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <div class="zone-h work" style="grid-column:1/4;grid-row:1">🏥 Nemocnice Vrchlabí</div>
+  <div class="zone-h kal" style="grid-column:4;grid-row:1">Kalrox</div>
+
+  <!-- Praha + směna -->
+  <section class="card clock" style="grid-column:1;grid-row:2">
+    <div class="label">Praha</div>
+    <div class="time num" id="tPraha">--:--</div>
+    <div class="date" id="dPraha"></div>
+    <div class="sub" id="subPraha"></div>
+    <div class="shift">
+      <div class="label">Směna <span id="shiftRange" style="text-transform:none;letter-spacing:0;font-weight:400"></span></div>
+      <button class="edit" id="shiftEdit">upravit</button>
+      <div class="bar"><i id="shiftBar" style="width:0"></i></div>
+      <div class="left num" id="shiftLeft"></div>
+      <div class="small muted" id="shiftSub"></div>
+      <div class="form" id="shiftForm">
+        <input type="time" id="shiftStart"> – <input type="time" id="shiftEnd">
+        <button class="ok" id="shiftSave">Uložit</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Info -->
+  <section class="card info" style="grid-column:2;grid-row:2">
+    <div class="label">Dnes má svátek</div>
+    <div class="big" id="svatek"></div>
+    <div class="small muted" id="zitra" style="margin-top:.3vh"></div>
+    <div style="margin-top:1.2vh">
+      <div class="row"><span class="muted small">Týden</span><span class="v num" id="tyden"></span></div>
+      <div class="row"><span class="muted small">Do Vánoc</span><span class="v num" id="vanoce"></span></div>
+    </div>
+    <div class="label" style="margin-top:1vh">Státní svátky ČR</div>
+    <div id="pristiSvatek" style="margin-top:.4vh"></div>
+  </section>
+
+  <!-- Služby -->
+  <section class="card" style="grid-column:3;grid-row:2">
+    <div class="label">Stav služeb <span id="svcTime" style="text-transform:none;letter-spacing:0;font-weight:400"></span></div>
+    <div class="svc-list" id="svcList"></div>
+  </section>
+
+  <!-- Počasí -->
+  <section class="card weather" id="w0" style="grid-column:1;grid-row:3"></section>
+  <section class="card weather" id="w1" style="grid-column:2;grid-row:3"></section>
+
+  <!-- Radar + výstrahy -->
+  <div class="col" style="grid-column:3;grid-row:3">
+    <section class="card radar">
+      <div class="label">Radar srážek</div>
+      <div class="fallback">Radar se nenačetl (windy.com může být blokované).<br>Otevři ručně: chmi.cz → Radarové snímky</div>
+      <iframe id="radar" loading="lazy" referrerpolicy="no-referrer"></iframe>
+    </section>
+    <section class="card" style="flex:0 0 auto;max-height:24vh;overflow:auto;padding:1.1vh 1vw" title="Vyhodnoceno z předpovědi Open-Meteo, nejde o oficiální výstrahy ČHMÚ.">
+      <div class="label">Výstrahy · 24 h</div>
+      <div id="alerts" style="margin-top:.6vh"><div class="muted small">Čekám na počasí…</div></div>
+    </section>
+  </div>
+
+  <!-- KALROX -->
+  <div class="col" style="grid-column:4;grid-row:2/4">
+    <section class="card clock kal">
+      <div class="label">Čína · Peking / Šanghaj</div>
+      <div class="time num" id="tCina">--:--</div>
+      <div class="date" id="dCina"></div>
+      <div class="sub" id="subCina"></div>
+      <div class="pill" id="cinaStatus"><span class="dot"></span><span></span></div>
+      <div class="cn-hol" id="cnHol"></div>
+    </section>
+
+    <section class="card rates kal">
+      <div class="label" style="margin-bottom:.6vh">Kurzy → CZK <span id="ratesDate" style="text-transform:none;letter-spacing:0;font-weight:400"></span></div>
+      <div id="ratesBody"><div class="muted small">Načítám…</div></div>
+    </section>
+
+    <section class="card notes kal">
+      <div class="label">Poznámky</div>
+      <textarea id="notes" placeholder="Sem si piš… (ukládá se automaticky v tomto prohlížeči)"></textarea>
+    </section>
+  </div>
+</div>
+<button class="fs" id="fsBtn" title="Celá obrazovka (klávesa F)">⛶ celá obrazovka</button>
+<button class="fs cfg" id="cfgBtn" title="Nastavení hlídaných služeb">⚙ nastavení</button>
+<div class="modal" id="cfgModal"><div class="box">
+  <h3>Hlídané služby</h3>
+  <p>Jeden řádek = jedna služba ve tvaru <code>Název | adresa</code>, řádky s # se ignorují. Kontroluje se každou minutu, jestli adresa odpovídá. U interních serverů s vlastním (nedůvěryhodným) certifikátem použij <code>http://</code>, jinak budou svítit červeně.</p>
+  <textarea id="cfgSvc"></textarea>
+  <div class="btns"><button class="cancel" id="cfgCancel">Zrušit</button><button class="save" id="cfgSave">Uložit</button></div>
+</div></div>
+
+<script>
+/* ===================== NASTAVENÍ ===================== */
+const LOCATIONS = [
+  { name: "Vrchlabí", lat: 50.6270, lon: 15.6094 },
+  { name: "Libštát",  lat: 50.5588, lon: 15.4196 },
+];
+const DEFAULT_SHIFT = { start: "07:00", end: "15:30" };
+const WEATHER_REFRESH_MIN = 15;
+const RATES_REFRESH_MIN = 60;
+const SERVICE_CHECK_SEC = 60;
+const GH_STATUS_REPO = "stormkal/nemocnice-dashboard"; // stav ze stránek ČSSZ / eZdraví / eRecept (GitHub Action)
+
+const DEFAULT_SERVICES = `ČSSZ web | https://www.cssz.gov.cz
+ČSSZ ePortál | https://eportal.cssz.cz
+eZdraví portál | https://www.ezdravi.gov.cz
+eZdraví API (KRP, SZZ, eŽádanka…) | https://api.csez.gov.cz
+eZdraví přihlášení (JSU) | https://auth.ezdravi.gov.cz
+eZdraví terminologie | https://apio.csez.gov.cz
+eRecept / ePreskripce | https://epreskripce.gov.cz
+Internet | https://www.google.com
+# Medicalc | http://doplň-adresu-serveru`;
+// kam vede klik u výpadku (stavové stránky)
+const STATUS_PAGES = { "cssz": "https://www.cssz.gov.cz/status.html", "csez": "https://www.ezdravi.gov.cz/katalog-sluzeb/dostupnost",
+  "ezdravi": "https://www.ezdravi.gov.cz/katalog-sluzeb/dostupnost", "epreskripce": "https://epreskripce.gov.cz/" };
+
+// Oficiální svátky ČLR (Státní rada, vyhl. 5. 11. 2026). Pracovní víkendy = náhradní pracovní dny.
+const CN_HOLIDAYS = [
+  ["2027-01-01","2027-01-03","Nový rok"],
+  ["2027-02-05","2027-02-13","Jarní svátky (čínský Nový rok)"],
+  ["2027-04-03","2027-04-05","Čching-ming"],
+  ["2027-05-01","2027-05-05","Svátek práce"],
+  ["2027-06-09","2027-06-09","Svátek dračích lodí"],
+  ["2027-09-15","2027-09-15","Svátek středu podzimu"],
+  ["2027-10-01","2027-10-07","Golden Week (státní svátek)"],
+];
+const CN_WORK_WEEKENDS = ["2027-01-31","2027-02-14","2027-05-08","2027-09-26","2027-10-09"];
+
+/* ===================== POMOCNÉ ===================== */
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, "0");
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+const DNY = ["neděle","pondělí","úterý","středa","čtvrtek","pátek","sobota"];
+const DNY_KR = ["Ne","Po","Út","St","Čt","Pá","So"];
+const MESICE_GEN = ["ledna","února","března","dubna","května","června","července","srpna","září","října","listopadu","prosince"];
+function plural(n, a, b, c){ n = Math.abs(n); return n === 1 ? a : (n >= 2 && n <= 4 ? b : c); }
+
+/* ===================== JMENINY (CZ kalendář) ===================== */
+const JMENINY = [
+ ["Nový rok","Karina","Radmila","Diana","Dalimil","Tři králové","Vilma","Čestmír","Vladan","Břetislav","Bohdana","Pravoslav","Edita","Radovan","Alice","Ctirad","Drahoslav","Vladislav","Doubravka","Ilona","Běla","Slavomír","Zdeněk","Milena","Miloš","Zora","Ingrid","Otýlie","Zdislava","Robin","Marika"],
+ ["Hynek","Nela","Blažej","Jarmila","Dobromila","Vanda","Veronika","Milada","Apolena","Mojmír","Božena","Slavěna","Věnceslav","Valentýn","Jiřina","Ljuba","Miloslava","Gizela","Patrik","Oldřich","Lenka","Petr","Svatopluk","Matěj","Liliana","Dorota","Alexandr","Lumír","Horymír"],
+ ["Bedřich","Anežka","Kamil","Stela","Kazimír","Miroslav","Tomáš","Gabriela","Františka","Viktorie","Anděla","Řehoř","Růžena","Rút a Matylda","Ida","Elena a Herbert","Vlastimil","Eduard","Josef","Světlana","Radek","Leona","Ivona","Gabriel","Marián","Emanuel","Dita","Soňa","Taťána","Arnošt","Kvido"],
+ ["Hugo","Erika","Richard","Ivana","Miroslava","Vendula","Heřman a Hermína","Ema","Dušan","Darja","Izabela","Julius","Aleš","Vincenc","Anastázie","Irena","Rudolf","Valérie","Rostislav","Marcela","Alexandra","Evženie","Vojtěch","Jiří","Marek","Oto","Jaroslav","Vlastislav","Robert","Blahoslav"],
+ ["Svátek práce","Zikmund","Alexej","Květoslav","Klaudie","Radoslav","Stanislav","Den vítězství","Ctibor","Blažena","Svatava","Pankrác","Servác","Bonifác","Žofie","Přemysl","Aneta","Nataša","Ivo","Zbyšek","Monika","Emil","Vladimír","Jana","Viola","Filip","Valdemar","Vilém","Maxmilián","Ferdinand","Kamila"],
+ ["Laura","Jarmil","Tamara","Dalibor","Dobroslav","Norbert","Iveta a Slavoj","Medard","Stanislava","Gita","Bruno","Antonie","Antonín","Roland","Vít","Zbyněk","Adolf","Milan","Leoš","Květa","Alois","Pavla","Zdeňka","Jan","Ivan","Adriana","Ladislav","Lubomír","Petr a Pavel","Šárka"],
+ ["Jaroslava","Patricie","Radomír","Prokop","Cyril a Metoděj","Mistr Jan Hus","Bohuslava","Nora","Drahoslava","Libuše a Amálie","Olga","Bořek","Markéta","Karolína","Jindřich","Luboš","Martina","Drahomíra","Čeněk","Ilja","Vítězslav","Magdaléna","Libor","Kristýna","Jakub","Anna","Věroslav","Viktor","Marta","Bořivoj","Ignác"],
+ ["Oskar","Gustav","Miluše","Dominik","Kristián","Oldřiška","Lada","Soběslav","Roman","Vavřinec","Zuzana","Klára","Alena","Alan","Hana","Jáchym","Petra","Helena","Ludvík","Bernard","Johana","Bohuslav","Sandra","Bartoloměj","Radim","Luděk","Otakar","Augustýn","Evelína","Vladěna","Pavlína"],
+ ["Linda a Samuel","Adéla","Bronislav","Jindřiška","Boris","Boleslav","Regína","Mariana","Daniela","Irma","Denisa","Marie","Lubor","Radka","Jolana","Ludmila","Naděžda","Kryštof","Zita","Oleg","Matouš","Darina","Berta","Jaromír","Zlata","Andrea","Jonáš","Václav","Michal","Jeroným"],
+ ["Igor","Olívie a Oliver","Bohumil","František","Eliška","Hanuš","Justýna","Věra","Štefan a Sára","Marina","Andrej","Marcel","Renáta","Agáta","Tereza","Havel","Hedvika","Lukáš","Michaela","Vendelín","Brigita","Sabina","Teodor","Nina","Beáta","Erik","Šarlota a Zoe","Den vzniku ČSR","Silvie","Tadeáš","Štěpánka"],
+ ["Felix","Památka zesnulých","Hubert","Karel","Miriam","Liběna","Saskie","Bohumír","Bohdan","Evžen","Martin","Benedikt","Tibor","Sáva","Leopold","Otmar","Mahulena","Romana","Alžběta","Nikola","Albert","Cecílie","Klement","Emílie","Kateřina","Artur","Xenie","René","Zina","Ondřej"],
+ ["Iva","Blanka","Svatoslav","Barbora","Jitka","Mikuláš","Ambrož a Benjamín","Květoslava","Vratislav","Julie","Dana","Simona","Lucie","Lýdie","Radana a Radan","Albína","Daniel","Miloslav","Ester","Dagmar","Natálie","Šimon","Vlasta","Adam a Eva","Boží hod vánoční","Štěpán","Žaneta","Bohumila","Judita","David","Silvestr"]
+];
+const jmeniny = d => JMENINY[d.getMonth()][d.getDate() - 1] || "";
+
+/* ===================== STÁTNÍ SVÁTKY ===================== */
+function easter(y){
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+  h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+  mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;
+  return new Date(y, mo-1, da);
+}
+function holidays(y){
+  const e = easter(y), add = (d,n)=>new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+  return [
+    [new Date(y,0,1),"Nový rok"],[add(e,-2),"Velký pátek"],[add(e,1),"Velikonoční pondělí"],
+    [new Date(y,4,1),"Svátek práce"],[new Date(y,4,8),"Den vítězství"],[new Date(y,6,5),"Cyril a Metoděj"],
+    [new Date(y,6,6),"Upálení Jana Husa"],[new Date(y,8,28),"Den české státnosti"],[new Date(y,9,28),"Vznik Československa"],
+    [new Date(y,10,17),"Den boje za svobodu"],[new Date(y,11,24),"Štědrý den"],[new Date(y,11,25),"1. svátek vánoční"],[new Date(y,11,26),"2. svátek vánoční"]
+  ];
+}
+function nextHolidays(today, count){
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const all = holidays(t0.getFullYear()).concat(holidays(t0.getFullYear()+1));
+  return all.filter(([d]) => d >= t0).slice(0, count).map(([d,n]) => ({ d, n, days: Math.round((d - t0)/864e5) }));
+}
+function isoWeek(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y0 = new Date(Date.UTC(t.getUTCFullYear(),0,1));
+  return Math.ceil(((t - y0)/864e5 + 1)/7);
+}
+
+/* ===================== HODINY ===================== */
+function tzParts(date, tz){
+  const p = {}; new Intl.DateTimeFormat("en-GB",{timeZone:tz,year:"numeric",month:"numeric",day:"numeric",
+    hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false,weekday:"short"})
+    .formatToParts(date).forEach(x => p[x.type] = x.value);
+  const wd = {Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6}[p.weekday];
+  return { y:+p.year, mo:+p.month, d:+p.day, h:+p.hour % 24, mi:+p.minute, s:+p.second, wd };
+}
+function tzOffsetMin(date, tz){
+  const p = tzParts(date, tz);
+  return Math.round((Date.UTC(p.y,p.mo-1,p.d,p.h,p.mi,p.s) - Math.floor(date/1000)*1000) / 60000);
+}
+let lastDay = -1;
+function tick(){
+  const now = new Date();
+  const pr = tzParts(now, "Europe/Prague"), cn = tzParts(now, "Asia/Shanghai");
+
+  $("tPraha").innerHTML = `${pad(pr.h)}:${pad(pr.mi)}<span class="sec">${pad(pr.s)}</span>`;
+  $("tCina").innerHTML  = `${pad(cn.h)}:${pad(cn.mi)}<span class="sec">${pad(cn.s)}</span>`;
+
+  const diffH = (tzOffsetMin(now,"Asia/Shanghai") - tzOffsetMin(now,"Europe/Prague")) / 60;
+  $("dCina").textContent = `${DNY[cn.wd]} ${cn.d}. ${MESICE_GEN[cn.mo-1]}`;
+  $("subCina").textContent = `+${diffH} h oproti Praze` + (cn.d !== pr.d ? " · v Číně už je jiný den" : "");
+
+  // pracovní doba v Číně (Po–Pá 9–18)
+  const cnDate = `${cn.y}-${pad(cn.mo)}-${pad(cn.d)}`;
+  const cnHolToday = CN_HOLIDAYS.find(h => cnDate >= h[0] && cnDate <= h[1]);
+  const cnMin = cn.h*60 + cn.mi, workday = !cnHolToday && ((cn.wd >= 1 && cn.wd <= 5) || CN_WORK_WEEKENDS.includes(cnDate));
+  const st = $("cinaStatus"), dot = st.querySelector(".dot"), txt = st.querySelector("span:last-child");
+  if (workday && cnMin >= 540 && cnMin < 1080){
+    dot.className = "dot on"; const left = 1080 - cnMin;
+    txt.textContent = `Dodavatelé v práci · ještě ${Math.floor(left/60)} h ${pad(left%60)} min`;
+  } else {
+    dot.className = "dot off";
+    let msg = "Mimo pracovní dobu";
+    if (workday && cnMin < 540) msg += ` · začínají za ${Math.floor((540-cnMin)/60)} h ${pad((540-cnMin)%60)} min`;
+    else if (cnHolToday) msg = `Svátek v Číně: ${cnHolToday[2]}`;
+    else if (!workday) msg += " · víkend";
+    txt.textContent = msg;
+  }
+
+  if (pr.d !== lastDay){ lastDay = pr.d; updateDay(now); updateCnHoliday(cnDate); }
+  updateShift(now);
+}
+
+function updateDay(now){
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  $("dPraha").textContent = `${DNY[d.getDay()]} ${d.getDate()}. ${MESICE_GEN[d.getMonth()]} ${d.getFullYear()}`;
+  const tom = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1);
+  $("svatek").textContent = jmeniny(d);
+  $("zitra").textContent = `zítra: ${jmeniny(tom)}`;
+  const week = isoWeek(d);
+  $("tyden").textContent = `${week}. (${week % 2 ? "lichý" : "sudý"})`;
+  const doy = Math.round((d - new Date(d.getFullYear(),0,1))/864e5) + 1;
+  const total = (new Date(d.getFullYear(),11,31) - new Date(d.getFullYear(),0,1))/864e5 + 1;
+
+  $("pristiSvatek").innerHTML = nextHolidays(d, 3).map(h => {
+    const wd = h.d.getDay();
+    const longWe = wd === 1 || wd === 5 ? ' <span title="prodloužený víkend">🎉</span>' : "";
+    const when = h.days === 0 ? "<b style='color:var(--green)'>dnes</b>" : `za ${h.days} ${plural(h.days,"den","dny","dní")}`;
+    const col = h.days <= 7 ? "color:var(--amber)" : "";
+    return `<div class="hol" style="${col}"><span>${h.n}${longWe}</span><span class="muted num">${DNY_KR[wd]} ${h.d.getDate()}. ${h.d.getMonth()+1}. · ${when}</span></div>`;
+  }).join("");
+  let xmas = new Date(d.getFullYear(),11,24); if (d > xmas) xmas = new Date(d.getFullYear()+1,11,24);
+  const xd = Math.round((xmas - d)/864e5);
+  $("vanoce").textContent = xd === 0 ? "Dnes je Štědrý den 🎄" : `${xd} ${plural(xd,"den","dny","dní")}`;
+  $("subPraha").textContent = "";
+}
+
+function updateCnHoliday(cnDate){
+  const el = $("cnHol"), fmt = s => { const [y,m,d] = s.split("-"); return `${+d}. ${+m}.`; };
+  const next = CN_HOLIDAYS.find(h => h[1] >= cnDate);
+  if (!next){ el.textContent = ""; return; }
+  const days = Math.round((new Date(next[0]) - new Date(cnDate)) / 864e5);
+  const range = next[0] === next[1] ? fmt(next[0]) : `${fmt(next[0])}–${fmt(next[1])}`;
+  let txt = days <= 0 ? `🏮 Probíhá: ${next[2]} (${range})` : `🏮 Příští svátek v Číně: ${next[2]} · ${range} · za ${days} ${plural(days,"den","dny","dní")}`;
+  const isCNY = next[2].startsWith("Jarní");
+  el.className = "cn-hol" + ((isCNY && days <= 45) || days <= 7 ? " warn" : "");
+  if (isCNY && days > 0 && days <= 45) txt += "<br>⚠ Továrny před Novým rokem zavírají dřív a po něm se rozjíždějí 2–3 týdny – objednávej s předstihem.";
+  const mk = CN_WORK_WEEKENDS.find(d => d >= cnDate);
+  if (mk){ const dd = Math.round((new Date(mk) - new Date(cnDate))/864e5); if (dd <= 7) txt += `<br>Pracovní víkendový den v Číně: ${fmt(mk)}`; }
+  el.innerHTML = txt;
+}
+
+/* ===================== SMĚNA ===================== */
+let shift = store.get("shift", DEFAULT_SHIFT);
+const toMin = s => { const [h,m] = s.split(":").map(Number); return h*60+m; };
+function updateShift(now){
+  $("shiftRange").textContent = `${shift.start}–${shift.end}`;
+  const s = toMin(shift.start), e = toMin(shift.end), cur = now.getHours()*60 + now.getMinutes() + now.getSeconds()/60;
+  const wd = now.getDay(), weekend = wd === 0 || wd === 6;
+  let pct = 0, left = "", sub = "";
+  if (weekend){ left = "Víkend 🎉"; sub = "Užij si volno"; }
+  else if (cur < s){ const m = Math.ceil(s-cur); left = `Začíná za ${Math.floor(m/60)} h ${pad(m%60)} min`; }
+  else if (cur >= e){ pct = 100; left = "Hotovo, padla ✅"; }
+  else {
+    pct = (cur - s) / (e - s) * 100; const m = Math.ceil(e - cur);
+    left = `${Math.floor(m/60)} h ${pad(m%60)} min do konce`;
+    sub = `odpracováno ${Math.round(pct)} %`;
+  }
+  if (!weekend){
+    // do víkendu (pátek konec směny)
+    const fri = new Date(now); fri.setDate(now.getDate() + (5 - wd)); fri.setHours(Math.floor(e/60), e%60, 0, 0);
+    const hrs = (fri - now)/36e5;
+    if (hrs > 0) sub += (sub ? " · " : "") + (wd === 5 ? "dnes je pátek 🙌" : `do víkendu ${Math.floor(hrs)} h`);
+  }
+  $("shiftBar").style.width = pct + "%";
+  $("shiftLeft").textContent = left;
+  $("shiftSub").textContent = sub;
+}
+$("shiftEdit").onclick = () => {
+  $("shiftStart").value = shift.start; $("shiftEnd").value = shift.end;
+  $("shiftForm").classList.toggle("open");
+};
+$("shiftSave").onclick = () => {
+  if ($("shiftStart").value && $("shiftEnd").value){
+    shift = { start: $("shiftStart").value, end: $("shiftEnd").value }; store.set("shift", shift);
+  }
+  $("shiftForm").classList.remove("open"); updateShift(new Date());
+};
+
+/* ===================== POČASÍ (Open-Meteo, bez klíče) ===================== */
+const WMO = {
+  0:["Jasno","☀️","🌙"],1:["Skoro jasno","🌤️","🌙"],2:["Polojasno","⛅","☁️"],3:["Zataženo","☁️","☁️"],
+  45:["Mlha","🌫️"],48:["Mlha s námrazou","🌫️"],51:["Slabé mrholení","🌦️"],53:["Mrholení","🌦️"],55:["Silné mrholení","🌧️"],
+  56:["Mrznoucí mrholení","🌧️"],57:["Mrznoucí mrholení","🌧️"],61:["Slabý déšť","🌦️"],63:["Déšť","🌧️"],65:["Silný déšť","🌧️"],
+  66:["Mrznoucí déšť","🌧️"],67:["Mrznoucí déšť","🌧️"],71:["Slabé sněžení","🌨️"],73:["Sněžení","🌨️"],75:["Silné sněžení","❄️"],
+  77:["Sněhová zrna","🌨️"],80:["Přeháňky","🌦️"],81:["Přeháňky","🌧️"],82:["Silné přeháňky","⛈️"],85:["Sněhové přeháňky","🌨️"],
+  86:["Sněhové přeháňky","❄️"],95:["Bouřka","⛈️"],96:["Bouřka s kroupami","⛈️"],99:["Bouřka s kroupami","⛈️"]
+};
+const wIcon = (c, day=1) => { const w = WMO[c] || ["?","🌡️"]; return (!day && w[2]) ? w[2] : w[1]; };
+const wText = c => (WMO[c] || ["–"])[0];
+const r0 = v => Math.round(v);
+function windDir(deg){ return ["S","SV","V","JV","J","JZ","Z","SZ"][Math.round(deg/45)%8]; }
+
+async function fetchWeather(loc){
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}`
+    + `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,is_day,precipitation`
+    + `&hourly=temperature_2m,weather_code,precipitation_probability,is_day,precipitation,snowfall,wind_gusts_10m`
+    + `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max`
+    + `&minutely_15=precipitation&forecast_minutely_15=12`
+    + `&timezone=Europe%2FPrague&forecast_days=4&wind_speed_unit=kmh`;
+  const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json();
+}
+// záloha: wttr.in → převod do stejného tvaru jako Open-Meteo
+const WWO2WMO={113:0,116:2,119:3,122:3,143:45,248:45,260:48,176:80,179:85,182:66,185:56,200:95,227:73,230:75,263:51,266:53,281:56,284:57,293:61,296:61,299:63,302:63,305:65,308:65,311:66,314:67,317:66,320:71,323:71,326:71,329:73,332:73,335:75,338:75,350:77,353:80,356:81,359:82,362:85,365:86,368:85,371:86,374:77,377:77,386:95,389:95,392:96,395:86};
+const to24 = t => { const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i); if(!m) return "00:00"; let h=+m[1]%12; if(m[3].toUpperCase()==="PM") h+=12; return pad(h)+":"+m[2]; };
+async function fetchWttr(loc){
+  const r = await fetch(`https://wttr.in/${loc.lat},${loc.lon}?format=j1`); if (!r.ok) throw new Error("wttr " + r.status);
+  const j = await r.json(), cc = j.current_condition[0], n = new Date();
+  const nowStr = `${n.getFullYear()}-${pad(n.getMonth()+1)}-${pad(n.getDate())}T${pad(n.getHours())}:${pad(n.getMinutes())}`;
+  const code = c => WWO2WMO[+c] ?? 3;
+  const sr = to24(j.weather[0].astronomy[0].sunrise), ss = to24(j.weather[0].astronomy[0].sunset);
+  const hourly = { time:[], temperature_2m:[], weather_code:[], precipitation_probability:[], is_day:[] };
+  j.weather.forEach(w => w.hourly.forEach(h => {
+    const hh = pad(Math.floor(+h.time/100)); const t = `${w.date}T${hh}:00`;
+    hourly.time.push(t); hourly.temperature_2m.push(+h.tempC); hourly.weather_code.push(code(h.weatherCode));
+    hourly.precipitation_probability.push(Math.max(+h.chanceofrain||0, +h.chanceofsnow||0));
+    hourly.is_day.push(hh >= sr.slice(0,2) && hh < ss.slice(0,2) ? 1 : 0);
+  }));
+  const daily = { time:[], weather_code:[], temperature_2m_max:[], temperature_2m_min:[], sunrise:[], sunset:[], precipitation_probability_max:[] };
+  j.weather.forEach(w => {
+    daily.time.push(w.date); daily.temperature_2m_max.push(+w.maxtempC); daily.temperature_2m_min.push(+w.mintempC);
+    const mid = w.hourly[Math.min(4, w.hourly.length-1)]; daily.weather_code.push(code(mid.weatherCode));
+    daily.sunrise.push(`${w.date}T${to24(w.astronomy[0].sunrise)}`); daily.sunset.push(`${w.date}T${to24(w.astronomy[0].sunset)}`);
+    daily.precipitation_probability_max.push(Math.max(...w.hourly.map(h => Math.max(+h.chanceofrain||0, +h.chanceofsnow||0))));
+  });
+  const nowH = n.getHours();
+  return { _src:"wttr.in", current:{ time:nowStr, temperature_2m:+cc.temp_C, apparent_temperature:+cc.FeelsLikeC,
+    relative_humidity_2m:+cc.humidity, weather_code:code(cc.weatherCode), wind_speed_10m:+cc.windspeedKmph,
+    wind_direction_10m:+cc.winddirDegree, is_day: (pad(nowH) >= sr.slice(0,2) && pad(nowH) < ss.slice(0,2)) ? 1 : 0 }, hourly, daily };
+}
+
+function renderWeather(el, loc, data, ts, stale){
+  const c = data.current, d = data.daily, h = data.hourly;
+  let i0 = h.time.findIndex(t => t > c.time); if (i0 < 0) i0 = 0;
+  let hours = "";
+  for (let k = 0; k < 8; k++){
+    const i = i0 + k; if (!h.time[i]) break;
+    const p = h.precipitation_probability[i];
+    hours += `<div><div class="h">${h.time[i].slice(11,13)}h</div><div class="i">${wIcon(h.weather_code[i], h.is_day[i])}</div>`
+      + `<div class="t num">${r0(h.temperature_2m[i])}°</div><div class="p">${p >= 20 ? p + " %" : ""}</div></div>`;
+  }
+  let days = "";
+  for (let k = 1; k <= 3 && d.time[k]; k++){
+    const dt = new Date(d.time[k] + "T12:00");
+    days += `<div><div class="d">${DNY_KR[dt.getDay()]} ${dt.getDate()}. ${dt.getMonth()+1}.</div><div class="i">${wIcon(d.weather_code[k])}</div>`
+      + `<div class="t num" style="white-space:nowrap">${r0(d.temperature_2m_max[k])}° <span class="muted">/ ${r0(d.temperature_2m_min[k])}°</span></div></div>`;
+  }
+  const sr = d.sunrise[0].slice(11,16), ss = d.sunset[0].slice(11,16);
+  const t = new Date(ts);
+  el.innerHTML = `
+    <div class="w-head"><div class="label">Počasí · ${loc.name}</div>
+      <div class="small muted num">☀ ${sr} → ${ss}</div></div>
+    <div class="w-now">
+      <div class="w-icon">${wIcon(c.weather_code, c.is_day)}</div>
+      <div><div class="w-temp num">${r0(c.temperature_2m)}°</div></div>
+      <div><div class="w-desc">${wText(c.weather_code)}</div>
+        <div class="small muted num">dnes ${r0(d.temperature_2m_max[0])}° / ${r0(d.temperature_2m_min[0])}°</div></div>
+    </div>
+    <div class="w-meta small">
+      <div><span class="muted">Pocitově</span><b class="num">${r0(c.apparent_temperature)}°</b></div>
+      <div><span class="muted">Vítr</span><b class="num">${r0(c.wind_speed_10m)} km/h ${windDir(c.wind_direction_10m)}</b></div>
+      <div><span class="muted">Vlhkost</span><b class="num">${c.relative_humidity_2m} %</b></div>
+      <div><span class="muted">Srážky dnes</span><b class="num">${d.precipitation_probability_max[0] ?? 0} %</b></div>
+    </div>
+    ${nowcast(data)}
+    <div class="w-hours">${hours}</div>
+    <div class="w-days">${days}</div>
+    <div class="w-upd">${stale ? "⚠ offline · " : ""}${data._src || "open-meteo"} · aktualizováno ${pad(t.getHours())}:${pad(t.getMinutes())}</div>`;
+}
+function nowcast(data){
+  const m = data.minutely_15; if (!m || !m.time) return "";
+  const now = data.current.time;
+  const idx = m.time.map((t,i) => i).filter(i => m.time[i] >= now.slice(0,14) + pad(Math.floor(+now.slice(14,16)/15)*15));
+  if (!idx.length) return "";
+  const cold = data.current.temperature_2m <= 1, what = cold ? "sněžení" : "déšť", What = cold ? "Sněží" : "Prší";
+  const minsFrom = i => Math.max(0, Math.round((new Date(m.time[i]) - new Date(now)) / 60000));
+  const wet = i => (m.precipitation[i] || 0) >= 0.05;
+  if (wet(idx[0])){
+    const end = idx.find(i => !wet(i));
+    return `<div class="w-now2 wet">☔ ${What}${end != null ? ` · skončí asi za ${minsFrom(end)} min` : " · minimálně další 3 h"}</div>`;
+  }
+  const start = idx.find(wet);
+  if (start != null){
+    const mmh = (m.precipitation[start] * 4).toFixed(1);
+    return `<div class="w-now2 wet">🌂 ${what[0].toUpperCase() + what.slice(1)} asi za ${minsFrom(start)} min (${mmh} mm/h)</div>`;
+  }
+  return `<div class="w-now2">✓ Příští 3 hodiny bez srážek</div>`;
+}
+
+function computeAlerts(loc, data){
+  const h = data.hourly, out = [];
+  if (!h.wind_gusts_10m) return out; // záložní zdroj nemá potřebná data
+  let i0 = h.time.findIndex(t => t > data.current.time); if (i0 < 0) i0 = 0;
+  const rng = [...Array(24).keys()].map(k => i0 + k).filter(i => h.time[i]);
+  const hh = i => h.time[i].slice(11,13) + "h";
+  const fz = rng.find(i => [56,57,66,67].includes(h.weather_code[i]));
+  if (fz != null) out.push(["bad","🧊","Ledovka – mrznoucí srážky", `od ${hh(fz)}`]);
+  const icy = rng.find(i => h.temperature_2m[i] <= 1 && h.temperature_2m[i] >= -3 && (h.precipitation[i] || 0) >= 0.1);
+  if (icy != null && fz == null) out.push(["warn","⚠️","Možné náledí / kluzko", `srážky kolem nuly od ${hh(icy)}`]);
+  const snow = rng.reduce((a,i) => a + (h.snowfall[i] || 0), 0);
+  if (snow >= 1) out.push([snow >= 5 ? "bad" : "warn","❄️",`Sněžení ~${Math.round(snow)} cm`, "za 24 h"]);
+  const gi = rng.reduce((b,i) => h.wind_gusts_10m[i] > h.wind_gusts_10m[b] ? i : b, rng[0]);
+  const g = h.wind_gusts_10m[gi];
+  if (g >= 55) out.push([g >= 75 ? "bad" : "warn","💨",`Silný vítr – nárazy až ${Math.round(g)} km/h`, `kolem ${hh(gi)}`]);
+  const tmin = Math.min(...rng.map(i => h.temperature_2m[i]));
+  if (tmin <= -10) out.push(["warn","🥶",`Silný mráz až ${Math.round(tmin)} °C`, ""]);
+  const fog = rng.slice(0,12).find(i => [45,48].includes(h.weather_code[i]));
+  if (fog != null) out.push(["warn","🌫️","Mlha", `kolem ${hh(fog)}`]);
+  const st = rng.find(i => h.weather_code[i] >= 95);
+  if (st != null) out.push(["bad","⛈️","Bouřky", `od ${hh(st)}`]);
+  return out;
+}
+const alertsByLoc = {};
+function renderAlerts(){
+  const el = $("alerts"), merged = new Map(); let known = false;
+  for (const loc of LOCATIONS){
+    const a = alertsByLoc[loc.name]; if (!a) continue; known = true;
+    for (const [lvl,ic,t,sub] of a){
+      const k = ic + t;
+      if (!merged.has(k)) merged.set(k, { lvl, ic, t, sub, locs: [] });
+      const m = merged.get(k); m.locs.push(loc.name); if (lvl === "bad") m.lvl = "bad";
+    }
+  }
+  if (!known) return;
+  el.innerHTML = merged.size ? [...merged.values()].map(m =>
+      `<div class="alert ${m.lvl}"><span class="ic">${m.ic}</span><span>${m.t}<small>${m.locs.join(" · ")}${m.sub ? " · " + m.sub : ""}</small></span></div>`).join("")
+    : `<div class="alert ok"><span class="ic">✓</span><span>Žádná rizika – cesta z práce v pohodě</span></div>`;
+}
+
+async function updateWeather(){
+  for (let i = 0; i < LOCATIONS.length; i++){
+    const loc = LOCATIONS[i], el = $("w"+i), key = "wx_" + loc.name;
+    const errs = [];
+    let data = null;
+    for (const fn of [fetchWeather, fetchWttr]){
+      try{ data = await fn(loc); break; }catch(e){ errs.push((fn === fetchWeather ? "open-meteo: " : "wttr.in: ") + (e.message || e)); }
+    }
+    if (data){
+      const ts = Date.now(); store.set(key, { data, ts }); renderWeather(el, loc, data, ts, false);
+      alertsByLoc[loc.name] = computeAlerts(loc, data); renderAlerts();
+    } else {
+      const cached = store.get(key, null);
+      if (cached) renderWeather(el, loc, cached.data, cached.ts, true);
+      else el.innerHTML = `<div class="label">Počasí · ${loc.name}</div><div class="err">Nepodařilo se načíst počasí. Zkusím to znovu za ${WEATHER_REFRESH_MIN} min.</div><div class="small muted" style="margin-top:1vh">${errs.join("<br>")}</div>`;
+    }
+  }
+}
+
+/* ===================== KURZY (ECB přes Frankfurter, bez klíče) ===================== */
+async function fetchRates(){
+  const from = new Date(Date.now() - 14*864e5).toISOString().slice(0,10);
+  const urls = [`https://api.frankfurter.dev/v1/${from}..?base=EUR&symbols=CZK,USD,CNY`,
+                `https://api.frankfurter.app/${from}..?from=EUR&to=CZK,USD,CNY`];
+  for (const u of urls){ try{ const r = await fetch(u); if (r.ok) return r.json(); }catch(e){} }
+  // záloha: currency-api na CDN jsDelivr (denní data, posledních 8 dní)
+  const rates = {};
+  const days = [...Array(8)].map((_,i) => new Date(Date.now() - i*864e5).toISOString().slice(0,10));
+  await Promise.all(days.map(async (d, i) => {
+    const u = i === 0 ? "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.min.json"
+                      : `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${d}/v1/currencies/eur.min.json`;
+    try{ const r = await fetch(u); if (!r.ok) return; const j = await r.json();
+      rates[j.date || d] = { CZK: j.eur.czk, USD: j.eur.usd, CNY: j.eur.cny }; }catch(e){}
+  }));
+  if (Object.keys(rates).length) return { rates, _src:"jsDelivr" };
+  throw new Error("rates");
+}
+function spark(vals){
+  const min = Math.min(...vals), max = Math.max(...vals), w = 100, h = 24, rng = (max - min) || 1;
+  const pts = vals.map((v,i) => `${(i/(vals.length-1)*w).toFixed(1)},${(h - 2 - (v-min)/rng*(h-4)).toFixed(1)}`).join(" ");
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#4cc2ff" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function renderRates(json, stale){
+  const dates = Object.keys(json.rates).sort();
+  const series = { EUR: [], USD: [], CNY: [] };
+  dates.forEach(dt => { const r = json.rates[dt];
+    series.EUR.push(r.CZK); series.USD.push(r.CZK / r.USD); series.CNY.push(r.CZK / r.CNY); });
+  const flag = { EUR:"€", USD:"$", CNY:"¥" };
+  let html = "";
+  for (const cur of ["EUR","USD","CNY"]){
+    const s = series[cur].length > 1 ? series[cur] : series[cur].concat(series[cur]), last = s[s.length-1], prev = s[s.length-2] ?? last;
+    const ch = (last - prev) / prev * 100;
+    const cls = ch > 0.005 ? "up" : (ch < -0.005 ? "down" : "muted");
+    html += `<div class="r"><span class="cur"><span class="muted" style="display:inline-block;width:1.1em">${flag[cur]}</span>${cur}</span>${spark(s)}`
+      + `<span class="val num">${last.toFixed(cur === "CNY" ? 3 : 2)}</span>`
+      + `<span class="chg num ${cls}">${ch > 0 ? "▲" : ch < 0 ? "▼" : "•"} ${Math.abs(ch).toFixed(2)} %</span></div>`;
+  }
+  $("ratesBody").innerHTML = html;
+  const ld = dates[dates.length-1].split("-");
+  $("ratesDate").textContent = `· ${json._src || "ECB"} ${+ld[2]}. ${+ld[1]}.${stale ? " · ⚠ offline" : ""}`;
+}
+async function updateRates(){
+  try{ const j = await fetchRates(); store.set("rates", j); renderRates(j, false); }
+  catch(e){
+    const c = store.get("rates", null);
+    if (c) renderRates(c, true);
+    else $("ratesBody").innerHTML = `<div class="err small">Kurzy nejdou načíst ze žádného zdroje (frankfurter.dev, frankfurter.app, cdn.jsdelivr.net).</div>`;
+  }
+}
+
+/* ===================== ODKAZY + SLUŽBY ===================== */
+const parseList = txt => txt.split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#") && l.includes("|"))
+  .map(l => { const i = l.indexOf("|"); return { name: l.slice(0,i).trim(), url: l.slice(i+1).trim() }; })
+  .filter(x => /^https?:\/\//.test(x.url));
+let svcTxt = store.get("services_v2", DEFAULT_SERVICES);
+const esc = t => t.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+
+let svcState = {};
+async function checkOne(s){
+  const ctrl = new AbortController(), t0 = performance.now(), to = setTimeout(() => ctrl.abort(), 5000);
+  try{
+    await fetch(s.url + (s.url.includes("?") ? "&" : "?") + "_=" + Date.now(), { mode: "no-cors", cache: "no-store", signal: ctrl.signal });
+    return { ok: true, ms: Math.round(performance.now() - t0) };
+  }catch(e){ return { ok: false, err: e.name === "AbortError" ? "timeout" : "nedostupné" }; }
+  finally{ clearTimeout(to); }
+}
+let ghStatus = null, ghErr = false;
+async function updateGhStatus(){
+  const urls = [`https://raw.githubusercontent.com/${GH_STATUS_REPO}/data/status.json?t=${Date.now()}`,
+                `https://cdn.jsdelivr.net/gh/${GH_STATUS_REPO}@data/status.json`];
+  for (const u of urls){
+    try{ const r = await fetch(u, { cache: "no-store" }); if (r.ok){ ghStatus = await r.json(); ghErr = false; renderServices(); return; } }catch(e){}
+  }
+  ghErr = true; renderServices();
+}
+function ghIssues(){
+  if (!ghStatus) return { issues: [], unknown: [], stale: false, time: "" };
+  const age = (Date.now() - new Date(ghStatus.updated)) / 60000, t = new Date(ghStatus.updated);
+  const issues = [], unknown = [];
+  for (const src of Object.values(ghStatus.sources || {})){
+    if (src.ok === false) src.issues.forEach(i => issues.push({ src: src.name, url: src.url, ...i }));
+    else if (src.ok == null || src.parsed === false) unknown.push(src.name);
+  }
+  return { issues, unknown, stale: age > 45, time: `${pad(t.getHours())}:${pad(t.getMinutes())}` };
+}
+function statusLink(url){ const k = Object.keys(STATUS_PAGES).find(k => url.includes(k)); return k ? STATUS_PAGES[k] : url; }
+function renderServices(){
+  const list = parseList(svcTxt);
+  if (!list.length){ $("svcList").innerHTML = `<div class="hint">Přidej servery v ⚙ nastavení (dole vpravo).</div>`; return; }
+  const checked = list.filter(s => svcState[s.url]);
+  if (!checked.length){ $("svcList").innerHTML = `<div class="hint">Kontroluji ${list.length} služeb…</div>`; return; }
+  const down = list.filter(s => svcState[s.url] && !svcState[s.url].ok);
+  const gh = ghIssues();
+  let pagesInfo = !ghStatus ? (ghErr ? " · stavové stránky zatím nedostupné" : "")
+    : ` + stavové stránky ČSSZ, eZdraví, eRecept (${gh.time}${gh.stale ? ", neaktuální" : ""})`;
+  if (gh.unknown.length) pagesInfo += ` · nelze ověřit: ${gh.unknown.join(", ")}`;
+  if (!down.length && !gh.issues.length){
+    $("svcList").innerHTML = `<div class="svc-ok"><span class="dot on"></span> Vše běží</div>
+      <div class="hint">Hlídám ${list.length} adres${pagesInfo}</div>`;
+    return;
+  }
+  const total = down.length + gh.issues.length;
+  $("svcList").innerHTML = `<div class="svc-down">⚠ ${total} ${plural(total,"problém","problémy","problémů")}</div>`
+   + down.map(s => {
+    const st = svcState[s.url], since = st.since ? ` · od ${st.since}` : "";
+    return `<a class="svc bad" href="${esc(statusLink(s.url))}" target="_blank" rel="noopener" title="Otevřít stavovou stránku">
+      <span class="dot off"></span><span>${esc(s.name)}</span><span class="ms">${st.err}${since}</span></a>`;
+  }).join("")
+   + gh.issues.map(i => `<a class="svc warn" href="${esc(i.url)}" target="_blank" rel="noopener">
+      <span class="dot" style="background:var(--amber)"></span><span>${esc(i.src)}: ${esc(i.name)}</span><span class="ms">${esc(i.status)}</span>
+      ${i.note ? `<span class="note">${esc(i.note)}</span>` : ""}</a>`).join("")
+   + `<div class="hint">${pagesInfo.replace(/^ \+ /, "")}</div>`;
+}
+async function checkServices(){
+  const list = parseList(svcTxt);
+  renderServices();
+  await Promise.all(list.map(async s => {
+    let r = await checkOne(s);
+    if (!r.ok){ await new Promise(x => setTimeout(x, 3000)); r = await checkOne(s); } // ověř podruhé, ať to neblikne zbytečně
+    const prev = svcState[s.url];
+    if (!r.ok){ const n = new Date(); r.since = prev && !prev.ok && prev.since ? prev.since : `${pad(n.getHours())}:${pad(n.getMinutes())}`; }
+    svcState[s.url] = r;
+  }));
+  renderServices();
+  const n = new Date(); $("svcTime").textContent = `· ${pad(n.getHours())}:${pad(n.getMinutes())}`;
+  const down = list.filter(s => svcState[s.url] && !svcState[s.url].ok).length;
+  document.title = down ? `⚠ ${down} výpadek – Dashboard` : "Dashboard";
+}
+
+$("cfgBtn").onclick = () => { $("cfgSvc").value = svcTxt; $("cfgModal").classList.add("open"); };
+$("cfgCancel").onclick = () => $("cfgModal").classList.remove("open");
+$("cfgSave").onclick = () => {
+  svcTxt = $("cfgSvc").value; store.set("services_v2", svcTxt);
+  $("cfgModal").classList.remove("open"); svcState = {}; checkServices();
+};
+
+/* ===================== RADAR ===================== */
+function loadRadar(){
+  const c = LOCATIONS[0];
+  $("radar").src = `https://embed.windy.com/embed2.html?lat=50.55&lon=15.55&detailLat=${c.lat}&detailLon=${c.lon}`
+    + `&zoom=8&level=surface&overlay=radar&product=radar&menu=&message=true&marker=true&calendar=now&pressure=&type=map`
+    + `&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1&_=${Date.now()}`;
+}
+
+/* ===================== POZNÁMKY ===================== */
+const notes = $("notes");
+notes.value = store.get("notes", "");
+notes.addEventListener("input", () => store.set("notes", notes.value));
+
+/* ===================== CELÁ OBRAZOVKA ===================== */
+function toggleFS(){
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(()=>{});
+  else document.exitFullscreen?.();
+}
+$("fsBtn").onclick = toggleFS;
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") $("cfgModal").classList.remove("open");
+  if ((e.key === "f" || e.key === "F") && !["TEXTAREA","INPUT"].includes(e.target.tagName)) toggleFS();
+});
+
+/* ===================== START ===================== */
+tick(); setInterval(tick, 1000);
+updateWeather(); setInterval(updateWeather, WEATHER_REFRESH_MIN*60e3);
+updateRates();  setInterval(updateRates, RATES_REFRESH_MIN*60e3);
+checkServices(); setInterval(checkServices, SERVICE_CHECK_SEC*1000);
+updateGhStatus(); setInterval(updateGhStatus, 2*60e3);
+loadRadar(); setInterval(loadRadar, 30*60e3);
+// pojistka: jednou denně ve 3:00 obnovit stránku
+setInterval(() => { const n = new Date(); if (n.getHours() === 3 && n.getMinutes() === 0 && n.getSeconds() < 2) location.reload(); }, 1000);
+</script>
+</body>
+</html>
