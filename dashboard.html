@@ -719,11 +719,11 @@ function ghIssues(){
 }
 function statusLink(url){ const k = Object.keys(STATUS_PAGES).find(k => url.includes(k)); return k ? STATUS_PAGES[k] : url; }
 let pingData = null, pingMissing = false;
-function loadPing(){
+function loadPing(useQuery = true){
   const sc = document.createElement("script");
-  sc.src = "ping.js?t=" + Date.now();
+  sc.src = useQuery ? "ping.js?t=" + Date.now() : "ping.js";
   sc.onload = () => { pingData = window.PING_DATA || null; pingMissing = !pingData; sc.remove(); renderServices(); };
-  sc.onerror = () => { pingMissing = true; sc.remove(); renderServices(); };
+  sc.onerror = () => { sc.remove(); if (useQuery) return loadPing(false); pingMissing = true; renderServices(); };
   document.head.appendChild(sc);
 }
 const ago = d => { const t = new Date(d); return `${pad(t.getHours())}:${pad(t.getMinutes())}`; };
@@ -743,7 +743,10 @@ function renderServices(){
     hs.filter(h => !h.ok).forEach(h => rows.push({ lvl: "bad", name: `${h.name} · ${h.ip}`, right: `neodpovídá${h.since ? " · od " + ago(h.since) : ""}` }));
     hs.filter(h => h.ok && h.ms >= 200).forEach(h => rows.push({ lvl: "warn", name: `${h.name} · ${h.ip}`, right: `pomalý ${h.ms} ms` }));
     pingTxt = `ping ${hs.filter(h => h.ok).length}/${hs.length} serverů`;
-  } else if (pingMissing) pingTxt = "ping monitor neběží (spusť start-ping.cmd)";
+  } else if (pingMissing){
+    const dir = decodeURIComponent(location.pathname).replace(/^\/([A-Za-z]:)/, "$1").replace(/[^\/]*$/, "").replace(/\//g, "\\");
+    pingTxt = location.protocol === "file:" ? `ping.js nenalezen ve složce ${dir} (spusť start-ping.cmd)` : "ping funguje jen při otevření dashboard.html ze složky";
+  }
   // 3) stavové stránky (GitHub)
   const gh = ghIssues();
   const bySrc = {};
