@@ -23,24 +23,27 @@ function parseEzdravi({ text }) {
   const ST = /^(v pořádku|ke sledování|nedostupn\S*|výpadek|omezen\S*|mimo provoz|porucha|degrad\S*|nefunkční|odstávka)$/i;
   const items = [];
   L.forEach((l, i) => { if (ST.test(l)) items.push({ name: nameBefore(L, i, ST), status: l, note: noteAfter(L, i) }); });
-  const issues = items.filter(x => !/^v pořádku$/i.test(x.status));
+  const issues = items.filter(x => !/^v pořádku$/i.test(x.status))
+    .map(x => ({ ...x, level: /ke sledování/i.test(x.status) ? "warn" : "bad" }));
   return { checked: items.length, issues };
 }
 
 // ČSSZ: stavy V POŘÁDKU / VÝSKYT CHYB / MNOHO CHYB (legendu přeskakujeme)
 function parseCssz({ text }) {
-  let L = lines(text);
-  const leg = L.findIndex(l => /^(legenda|vysvětlivky|význam)/i.test(l));
+  const L = lines(text);
   const ST = /^(v pořádku|výskyt chyb|mnoho chyb|nedostupn\S*|výpadek|odstávka|mimo provoz)$/i;
-  const items = [];
+  const items = []; let section = "";
   L.forEach((l, i) => {
+    if (/^služby\s/i.test(l) || /^eportál$/i.test(l)) section = l.replace(/^služby\s+/i, "");
     if (!ST.test(l)) return;
-    if (leg >= 0 && i > leg) return;
-    const next = L[i + 1] || "";
-    if (/^(nebylo|zvýšen|většina|služba se chová|byl zjištěn)/i.test(next)) return; // popis v legendě
-    items.push({ name: nameBefore(L, i, ST), status: l, note: "" });
+    const name = nameBefore(L, i, ST), resp = /odezv/i.test(L[i + 1] || "") ? L[i + 1] : "";
+    const st = l.toUpperCase();
+    let level = st === "V POŘÁDKU" ? "ok" : st === "VÝSKYT CHYB" ? "warn" : "bad";
+    let status = l;
+    if (resp && !/normální/i.test(resp)){ status = level === "ok" ? resp : `${l} · ${resp}`; if (level === "ok") level = "warn"; }
+    items.push({ name: section ? `${section}: ${name}` : name, status, level, note: "" });
   });
-  const issues = items.filter(x => !/^v pořádku$/i.test(x.status));
+  const issues = items.filter(x => x.level !== "ok");
   return { checked: items.length, issues };
 }
 
@@ -51,7 +54,7 @@ function parseEpreskripce({ text }) {
   if (i < 0) return { checked: 0, issues: [] };
   const head = L[i], detail = L[i + 1] || "";
   const ok = /bez omezení/i.test(head + " " + detail);
-  return { checked: 1, issues: ok ? [] : [{ name: "eRecept", status: head.replace(/^stav systému:?\s*/i, "") || head, note: detail.slice(0, 200) }] };
+  return { checked: 1, issues: ok ? [] : [{ name: "eRecept", level: "bad", status: head.replace(/^stav systému:?\s*/i, "") || head, note: detail.slice(0, 200) }] };
 }
 
 const SOURCES = [
@@ -74,8 +77,9 @@ for (const s of SOURCES) {
     if (/json/.test(ct)) { try { xhr.push({ url: r.url(), body: (await r.text()).slice(0, 4000) }); } catch {} }
   });
   try {
-    const resp = await page.goto(s.url, { waitUntil: "networkidle", timeout: 45000 });
-    await page.waitForTimeout(3000);
+    const resp = await page.goto(s.url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    try { await page.waitForLoadState("networkidle", { timeout: 15000 }); } catch {}
+    await page.waitForTimeout(4000);
     const text = await page.evaluate(() => document.body.innerText);
     fs.writeFileSync(`out/debug/${s.id}.txt`, text);
     fs.writeFileSync(`out/debug/${s.id}-xhr.json`, JSON.stringify(xhr, null, 1));

@@ -103,8 +103,8 @@
 
   /* Služby */
   .svc-list{margin-top:.8vh;overflow:auto;min-height:0}
-  .svc{display:grid;grid-template-columns:auto 1fr auto;gap:.6vw;align-items:center;padding:.55vh 0;border-bottom:1px solid var(--line);
-    font-size:clamp(12px,.9vw,18px)}
+  .svc{display:grid;grid-template-columns:auto 1fr auto;gap:.6vw;align-items:center;padding:.45vh 0;border-bottom:1px solid var(--line);
+    font-size:clamp(11px,.8vw,16px)}
   .svc:last-child{border-bottom:0}
   .svc .ms{font-size:clamp(10px,.7vw,14px);color:var(--muted)}
   .svc.bad{color:var(--red);text-decoration:none}
@@ -718,32 +718,64 @@ function ghIssues(){
   return { issues, unknown, stale: age > 45, time: `${pad(t.getHours())}:${pad(t.getMinutes())}` };
 }
 function statusLink(url){ const k = Object.keys(STATUS_PAGES).find(k => url.includes(k)); return k ? STATUS_PAGES[k] : url; }
+let pingData = null, pingMissing = false;
+function loadPing(){
+  const sc = document.createElement("script");
+  sc.src = "ping.js?t=" + Date.now();
+  sc.onload = () => { pingData = window.PING_DATA || null; pingMissing = !pingData; sc.remove(); renderServices(); };
+  sc.onerror = () => { pingMissing = true; sc.remove(); renderServices(); };
+  document.head.appendChild(sc);
+}
+const ago = d => { const t = new Date(d); return `${pad(t.getHours())}:${pad(t.getMinutes())}`; };
+
 function renderServices(){
   const list = parseList(svcTxt);
-  if (!list.length){ $("svcList").innerHTML = `<div class="hint">Přidej servery v ⚙ nastavení (dole vpravo).</div>`; return; }
-  const checked = list.filter(s => svcState[s.url]);
-  if (!checked.length){ $("svcList").innerHTML = `<div class="hint">Kontroluji ${list.length} služeb…</div>`; return; }
+  const rows = [], hints = [];
+  // 1) web adresy
   const down = list.filter(s => svcState[s.url] && !svcState[s.url].ok);
+  down.forEach(s => { const st = svcState[s.url];
+    rows.push({ lvl: "bad", href: statusLink(s.url), name: s.name, right: st.err + (st.since ? ` · od ${st.since}` : "") }); });
+  // 2) ping
+  let pingTxt = "";
+  if (pingData){
+    const hs = pingData.hosts || [], age = (Date.now() - new Date(pingData.updated)) / 1000;
+    if (age > 120) rows.push({ lvl: "warn", name: "Ping monitor neaktualizuje", right: `poslední ${ago(pingData.updated)}` });
+    hs.filter(h => !h.ok).forEach(h => rows.push({ lvl: "bad", name: `${h.name} · ${h.ip}`, right: `neodpovídá${h.since ? " · od " + ago(h.since) : ""}` }));
+    hs.filter(h => h.ok && h.ms >= 200).forEach(h => rows.push({ lvl: "warn", name: `${h.name} · ${h.ip}`, right: `pomalý ${h.ms} ms` }));
+    pingTxt = `ping ${hs.filter(h => h.ok).length}/${hs.length} serverů`;
+  } else if (pingMissing) pingTxt = "ping monitor neběží (spusť start-ping.cmd)";
+  // 3) stavové stránky (GitHub)
   const gh = ghIssues();
-  let pagesInfo = !ghStatus ? (ghErr ? " · stavové stránky zatím nedostupné" : "")
-    : ` + stavové stránky ČSSZ, eZdraví, eRecept (${gh.time}${gh.stale ? ", neaktuální" : ""})`;
-  if (gh.unknown.length) pagesInfo += ` · nelze ověřit: ${gh.unknown.join(", ")}`;
-  if (!down.length && !gh.issues.length){
-    $("svcList").innerHTML = `<div class="svc-ok"><span class="dot on"></span> Vše běží</div>
-      <div class="hint">Hlídám ${list.length} adres${pagesInfo}</div>`;
+  const bySrc = {};
+  gh.issues.forEach(i => (bySrc[i.src] = bySrc[i.src] || []).push(i));
+  for (const [src, arr] of Object.entries(bySrc)){
+    arr.filter(i => i.level !== "warn").forEach(i => rows.push({ lvl: "bad", href: i.url, name: `${src}: ${i.name}`, right: i.status, note: i.note }));
+    const w = arr.filter(i => i.level === "warn");
+    if (w.length > 2) rows.push({ lvl: "warn", href: w[0].url, name: `${src}: ${w.length} ${plural(w.length,"služba","služby","služeb")}`, right: w[0].status.split(" · ")[0].toLowerCase(),
+      note: w.map(i => i.name.replace(/^.*?: /, "")).join(", ") });
+    else w.forEach(i => rows.push({ lvl: "warn", href: i.url, name: `${src}: ${i.name}`, right: i.status, note: i.note }));
+  }
+  let pagesTxt = !ghStatus ? (ghErr ? "stavové stránky nedostupné" : "") : `ČSSZ, eZdraví, eRecept (${gh.time}${gh.stale ? ", neaktuální" : ""})`;
+  if (gh.unknown.length) pagesTxt += ` · nelze ověřit: ${gh.unknown.join(", ")}`;
+  if (list.length) hints.push(`${list.length} webů`);
+  if (pingTxt) hints.push(pingTxt);
+  if (pagesTxt) hints.push(pagesTxt);
+  const hint = `<div class="hint">Hlídám: ${hints.join(" · ")}</div>`;
+
+  if (!rows.length){
+    const waiting = !list.some(s => svcState[s.url]) && !pingData && !ghStatus;
+    $("svcList").innerHTML = waiting ? `<div class="hint">Kontroluji…</div>` : `<div class="svc-ok"><span class="dot on"></span> Vše běží</div>${hint}`;
     return;
   }
-  const total = down.length + gh.issues.length;
-  $("svcList").innerHTML = `<div class="svc-down">⚠ ${total} ${plural(total,"problém","problémy","problémů")}</div>`
-   + down.map(s => {
-    const st = svcState[s.url], since = st.since ? ` · od ${st.since}` : "";
-    return `<a class="svc bad" href="${esc(statusLink(s.url))}" target="_blank" rel="noopener" title="Otevřít stavovou stránku">
-      <span class="dot off"></span><span>${esc(s.name)}</span><span class="ms">${st.err}${since}</span></a>`;
-  }).join("")
-   + gh.issues.map(i => `<a class="svc warn" href="${esc(i.url)}" target="_blank" rel="noopener">
-      <span class="dot" style="background:var(--amber)"></span><span>${esc(i.src)}: ${esc(i.name)}</span><span class="ms">${esc(i.status)}</span>
-      ${i.note ? `<span class="note">${esc(i.note)}</span>` : ""}</a>`).join("")
-   + `<div class="hint">${pagesInfo.replace(/^ \+ /, "")}</div>`;
+  const bad = rows.filter(r => r.lvl === "bad").length;
+  const head = bad ? `<div class="svc-down">⚠ ${bad} ${plural(bad,"výpadek","výpadky","výpadků")}</div>`
+                   : `<div class="svc-down" style="color:var(--amber)">Drobné problémy</div>`;
+  rows.sort((a,b) => (a.lvl === "bad" ? 0 : 1) - (b.lvl === "bad" ? 0 : 1));
+  $("svcList").innerHTML = head + rows.map(r => {
+    const tag = r.href ? `a href="${esc(r.href)}" target="_blank" rel="noopener"` : "div";
+    const dot = r.lvl === "bad" ? `<span class="dot off"></span>` : `<span class="dot" style="background:var(--amber)"></span>`;
+    return `<${tag} class="svc ${r.lvl === "bad" ? "bad" : "warn"}">${dot}<span>${esc(r.name)}</span><span class="ms">${esc(r.right || "")}</span>${r.note ? `<span class="note">${esc(r.note)}</span>` : ""}</${r.href ? "a" : "div"}>`;
+  }).join("") + hint;
 }
 async function checkServices(){
   const list = parseList(svcTxt);
@@ -757,7 +789,8 @@ async function checkServices(){
   }));
   renderServices();
   const n = new Date(); $("svcTime").textContent = `· ${pad(n.getHours())}:${pad(n.getMinutes())}`;
-  const down = list.filter(s => svcState[s.url] && !svcState[s.url].ok).length;
+  const down = list.filter(s => svcState[s.url] && !svcState[s.url].ok).length
+    + (pingData ? (pingData.hosts || []).filter(h => !h.ok).length : 0);
   document.title = down ? `⚠ ${down} výpadek – Dashboard` : "Dashboard";
 }
 
@@ -798,6 +831,7 @@ updateWeather(); setInterval(updateWeather, WEATHER_REFRESH_MIN*60e3);
 updateRates();  setInterval(updateRates, RATES_REFRESH_MIN*60e3);
 checkServices(); setInterval(checkServices, SERVICE_CHECK_SEC*1000);
 updateGhStatus(); setInterval(updateGhStatus, 2*60e3);
+loadPing(); setInterval(loadPing, 15e3);
 loadRadar(); setInterval(loadRadar, 30*60e3);
 // pojistka: jednou denně ve 3:00 obnovit stránku
 setInterval(() => { const n = new Date(); if (n.getHours() === 3 && n.getMinutes() === 0 && n.getSeconds() < 2) location.reload(); }, 1000);
