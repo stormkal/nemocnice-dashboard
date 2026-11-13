@@ -122,6 +122,11 @@
   .alarm.on{display:flex}
   .alarm .a-ic{font-size:1.6em} .alarm .a-sub{font-size:.3em;font-weight:400;opacity:.8;margin-top:2vh}
   @keyframes blink{0%,100%{background:rgba(220,38,38,.92)}50%{background:rgba(120,10,10,.92)}}
+  .cr{display:grid;grid-template-columns:auto 1fr auto;gap:.6vw;align-items:baseline;padding:.6vh 0;border-bottom:1px solid var(--line)}
+  .cr:last-child{border-bottom:0}
+  .cr .cur{font-weight:700;font-size:clamp(13px,1vw,20px);white-space:nowrap}
+  .cr .val{text-align:right;font-size:clamp(14px,1.1vw,24px);font-weight:600;white-space:nowrap}
+  .cr .sub{grid-column:2/4;text-align:right;font-size:clamp(10px,.72vw,14px);color:var(--muted);margin-top:-.4vh}
   /* Nowcast */
   .w-now2{margin-top:1.4vh;padding:.9vh .8vw;border-radius:10px;background:var(--card2);font-size:clamp(12px,.9vw,18px)}
   .w-now2.wet{background:rgba(76,194,255,.12);border:1px solid rgba(76,194,255,.35)}
@@ -267,6 +272,8 @@
     <section class="card rates kal">
       <div class="label" style="margin-bottom:.6vh">Kurzy → CZK <span id="ratesDate" style="text-transform:none;letter-spacing:0;font-weight:400"></span></div>
       <div id="ratesBody"><div class="muted small">Načítám…</div></div>
+      <div class="label" style="margin-top:1.2vh;margin-bottom:.4vh">Krypto <span id="cryptoSrc" style="text-transform:none;letter-spacing:0;font-weight:400"></span></div>
+      <div id="cryptoBody"><div class="muted small">Načítám…</div></div>
     </section>
 
     <section class="card notes kal">
@@ -932,6 +939,43 @@ function renderTip(){
   $("tip").innerHTML = `💡 <b>${esc(k)}</b> – ${esc(v)}`; $("tip").title = `${k} – ${v}`;
 }
 renderTip(); setInterval(renderTip, 60*60e3);
+
+/* ===================== KRYPTO ===================== */
+const fmtCZK = v => Math.round(v).toLocaleString("cs-CZ") + " Kč";
+const fmtUSD = v => "$" + Math.round(v).toLocaleString("en-US");
+async function fetchCrypto(){
+  try{ // živě: CoinGecko
+    const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=czk,usd&include_24hr_change=true", { cache: "no-store" });
+    if (r.ok){ const j = await r.json();
+      return { src: "CoinGecko", BTC: { czk: j.bitcoin.czk, usd: j.bitcoin.usd, ch: j.bitcoin.czk_24h_change },
+                               ETH: { czk: j.ethereum.czk, usd: j.ethereum.usd, ch: j.ethereum.czk_24h_change } }; }
+  }catch(e){}
+  // záloha: denní data přes jsDelivr
+  const day = d => new Date(Date.now() - d*864e5).toISOString().slice(0,10);
+  const get = async tag => { const r = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${tag}/v1/currencies/eur.min.json`); if (!r.ok) throw 0; return (await r.json()).eur; };
+  const now = await get("latest"); let prev = null; try{ prev = await get(day(1)); }catch(e){}
+  const px = (e, c) => ({ czk: e.czk / e[c], usd: e.usd / e[c] });
+  const out = { src: "jsDelivr, denní" };
+  for (const [k,c] of [["BTC","btc"],["ETH","eth"]]){
+    const p = px(now, c); p.ch = prev ? (p.czk / px(prev, c).czk - 1) * 100 : null; out[k] = p;
+  }
+  return out;
+}
+function renderCrypto(d, stale){
+  const ic = { BTC: "₿", ETH: "Ξ" };
+  $("cryptoBody").innerHTML = ["BTC","ETH"].map(k => {
+    const x = d[k], ch = x.ch;
+    const chTxt = ch == null ? "" : `<span class="${ch > 0 ? "down" : ch < 0 ? "up" : "muted"}">${ch > 0 ? "▲" : ch < 0 ? "▼" : "•"} ${Math.abs(ch).toFixed(1)} %</span> · `;
+    return `<div class="cr"><span class="cur"><span class="muted" style="display:inline-block;width:1.1em">${ic[k]}</span>${k}</span>`
+      + `<span></span><span class="val num">${fmtCZK(x.czk)}</span><span class="sub">${chTxt}${fmtUSD(x.usd)}</span></div>`;
+  }).join("");
+  $("cryptoSrc").textContent = `· ${d.src}${stale ? " · ⚠ offline" : ""}`;
+}
+async function updateCrypto(){
+  try{ const d = await fetchCrypto(); store.set("crypto", d); renderCrypto(d, false); }
+  catch(e){ const c = store.get("crypto", null); if (c) renderCrypto(c, true); else $("cryptoBody").innerHTML = `<div class="err small">Krypto se nepodařilo načíst.</div>`; }
+}
+updateCrypto(); setInterval(updateCrypto, 5*60e3);
 
 /* ===================== POZNÁMKY ===================== */
 const notes = $("notes");
