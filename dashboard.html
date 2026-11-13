@@ -718,14 +718,6 @@ function ghIssues(){
   return { issues, unknown, stale: age > 45, time: `${pad(t.getHours())}:${pad(t.getMinutes())}` };
 }
 function statusLink(url){ const k = Object.keys(STATUS_PAGES).find(k => url.includes(k)); return k ? STATUS_PAGES[k] : url; }
-let pingData = null, pingMissing = false;
-function loadPing(useQuery = true){
-  const sc = document.createElement("script");
-  sc.src = useQuery ? "ping.js?t=" + Date.now() : "ping.js";
-  sc.onload = () => { pingData = window.PING_DATA || null; pingMissing = !pingData; sc.remove(); renderServices(); };
-  sc.onerror = () => { sc.remove(); if (useQuery) return loadPing(false); pingMissing = true; renderServices(); };
-  document.head.appendChild(sc);
-}
 const ago = d => { const t = new Date(d); return `${pad(t.getHours())}:${pad(t.getMinutes())}`; };
 
 function renderServices(){
@@ -735,21 +727,6 @@ function renderServices(){
   const down = list.filter(s => svcState[s.url] && !svcState[s.url].ok);
   down.forEach(s => { const st = svcState[s.url];
     rows.push({ lvl: "bad", href: statusLink(s.url), name: s.name, right: st.err + (st.since ? ` · od ${st.since}` : "") }); });
-  // 2) ping
-  let pingTxt = "";
-  if (pingData){
-    const hs = pingData.hosts || [], age = (Date.now() - new Date(pingData.updated)) / 1000;
-    if (age > 120) rows.push({ lvl: "warn", name: "Ping monitor neaktualizuje", right: `poslední ${ago(pingData.updated)}` });
-    const how = h => h.method === "tcp" ? ` (TCP ${h.port})` : "";
-    hs.filter(h => !h.ok).forEach(h => rows.push({ lvl: "bad", name: `${h.name} · ${h.ip}${how(h)}`, right: `neodpovídá${h.since ? " · od " + ago(h.since) : ""}` }));
-    hs.filter(h => h.ok && !h.unknown && h.ms >= 200).forEach(h => rows.push({ lvl: "warn", name: `${h.name} · ${h.ip}${how(h)}`, right: `pomalý ${h.ms} ms` }));
-    const known = hs.filter(h => !h.unknown), unk = hs.filter(h => h.unknown);
-    pingTxt = `servery ${known.filter(h => h.ok).length}/${known.length}`;
-    if (unk.length) pingTxt += ` · nelze ověřit: ${unk.map(h => h.name).join(", ")}`;
-  } else if (pingMissing){
-    const dir = decodeURIComponent(location.pathname).replace(/^\/([A-Za-z]:)/, "$1").replace(/[^\/]*$/, "").replace(/\//g, "\\");
-    pingTxt = location.protocol === "file:" ? `ping.js nenalezen ve složce ${dir} (spusť start-ping.cmd)` : "ping funguje jen při otevření dashboard.html ze složky";
-  }
   // 3) stavové stránky (GitHub)
   const gh = ghIssues();
   const bySrc = {};
@@ -764,12 +741,11 @@ function renderServices(){
   let pagesTxt = !ghStatus ? (ghErr ? "stavové stránky nedostupné" : "") : `ČSSZ, eZdraví, eRecept (${gh.time}${gh.stale ? ", neaktuální" : ""})`;
   if (gh.unknown.length) pagesTxt += ` · nelze ověřit: ${gh.unknown.join(", ")}`;
   if (list.length) hints.push(`${list.length} webů`);
-  if (pingTxt) hints.push(pingTxt);
   if (pagesTxt) hints.push(pagesTxt);
   const hint = `<div class="hint">Hlídám: ${hints.join(" · ")}</div>`;
 
   if (!rows.length){
-    const waiting = !list.some(s => svcState[s.url]) && !pingData && !ghStatus;
+    const waiting = !list.some(s => svcState[s.url]) && !ghStatus;
     $("svcList").innerHTML = waiting ? `<div class="hint">Kontroluji…</div>` : `<div class="svc-ok"><span class="dot on"></span> Vše běží</div>${hint}`;
     return;
   }
@@ -795,8 +771,7 @@ async function checkServices(){
   }));
   renderServices();
   const n = new Date(); $("svcTime").textContent = `· ${pad(n.getHours())}:${pad(n.getMinutes())}`;
-  const down = list.filter(s => svcState[s.url] && !svcState[s.url].ok).length
-    + (pingData ? (pingData.hosts || []).filter(h => !h.ok).length : 0);
+  const down = list.filter(s => svcState[s.url] && !svcState[s.url].ok).length;
   document.title = down ? `⚠ ${down} výpadek – Dashboard` : "Dashboard";
 }
 
@@ -837,7 +812,6 @@ updateWeather(); setInterval(updateWeather, WEATHER_REFRESH_MIN*60e3);
 updateRates();  setInterval(updateRates, RATES_REFRESH_MIN*60e3);
 checkServices(); setInterval(checkServices, SERVICE_CHECK_SEC*1000);
 updateGhStatus(); setInterval(updateGhStatus, 2*60e3);
-loadPing(); setInterval(loadPing, 15e3);
 loadRadar(); setInterval(loadRadar, 30*60e3);
 // pojistka: jednou denně ve 3:00 obnovit stránku
 setInterval(() => { const n = new Date(); if (n.getHours() === 3 && n.getMinutes() === 0 && n.getSeconds() < 2) location.reload(); }, 1000);
