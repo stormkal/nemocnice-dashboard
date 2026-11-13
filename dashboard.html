@@ -97,6 +97,31 @@
   .clock .shift .edit{top:1vh;right:0}
   .svc.warn{color:var(--amber);text-decoration:none}
   .svc .note{grid-column:2/4;font-size:clamp(10px,.7vw,13px);color:var(--muted);margin-top:-.3vh}
+  .zone-h{display:flex;justify-content:space-between;align-items:baseline;gap:2vw}
+  .zone-h .tip{font-size:clamp(11px,.78vw,15px);font-weight:400;letter-spacing:0;text-transform:none;color:var(--muted);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .zone-h .tip b{color:var(--accent);font-weight:600}
+  .timer{padding:1.1vh 1vw}
+  .timer .t-row{display:flex;gap:.3vw;margin-top:.6vh;flex-wrap:wrap}
+  .timer input{background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:3px 6px;font:inherit;
+    font-size:clamp(11px,.8vw,15px);min-width:0}
+  .timer #tLabel{flex:1}
+  .timer #tMin{width:4.2em}
+  .timer button{background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:3px 8px;cursor:pointer;
+    font:inherit;font-size:clamp(11px,.8vw,15px)}
+  .timer button:hover{border-color:var(--accent)}
+  .timer button.go{background:var(--accent);color:#000;border:0;font-weight:700}
+  .t-item{display:flex;justify-content:space-between;align-items:center;gap:.5vw;margin-top:.5vh;padding:.4vh .5vw;border-radius:6px;
+    background:rgba(76,194,255,.1);font-size:clamp(12px,.9vw,18px)}
+  .t-item .rem{font-weight:700;font-variant-numeric:tabular-nums}
+  .t-item .x{background:none;border:0;color:var(--muted);cursor:pointer;padding:0 4px}
+  .sw{display:flex;align-items:center;gap:.4vw;margin-top:.9vh;padding-top:.7vh;border-top:1px solid var(--line)}
+  .sw-t{flex:1;text-align:right;font-size:clamp(15px,1.2vw,24px);font-weight:600;margin-right:.3vw}
+  .alarm{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;text-align:center;cursor:pointer;
+    font-size:clamp(28px,4vw,80px);font-weight:700;color:#fff;animation:blink 1s infinite}
+  .alarm.on{display:flex}
+  .alarm .a-ic{font-size:1.6em} .alarm .a-sub{font-size:.3em;font-weight:400;opacity:.8;margin-top:2vh}
+  @keyframes blink{0%,100%{background:rgba(220,38,38,.92)}50%{background:rgba(120,10,10,.92)}}
   /* Nowcast */
   .w-now2{margin-top:1.4vh;padding:.9vh .8vw;border-radius:10px;background:var(--card2);font-size:clamp(12px,.9vw,18px)}
   .w-now2.wet{background:rgba(76,194,255,.12);border:1px solid rgba(76,194,255,.35)}
@@ -113,7 +138,7 @@
   .hint{font-size:clamp(11px,.75vw,15px);color:var(--muted);margin-top:1vh}
 
   /* Radar */
-  .radar{flex:1;min-height:30vh;padding:0;overflow:hidden}
+  .radar{flex:1;min-height:18vh;padding:0;overflow:hidden}
   .radar iframe{border:0;width:100%;height:100%;border-radius:14px;background:var(--card2)}
   .radar .label{position:absolute;top:1vh;left:1vw;z-index:2;background:rgba(11,15,20,.75);padding:3px 8px;border-radius:6px}
   .radar .fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:2vw;
@@ -157,7 +182,7 @@
 <body>
 <div class="grid">
 
-  <div class="zone-h work" style="grid-column:1/4;grid-row:1">🏥 Nemocnice Vrchlabí</div>
+  <div class="zone-h work" style="grid-column:1/4;grid-row:1"><span>🏥 Nemocnice Vrchlabí</span><span class="tip" id="tip"></span></div>
   <div class="zone-h kal" style="grid-column:4;grid-row:1">Kalrox</div>
 
   <!-- Praha + směna -->
@@ -204,6 +229,19 @@
 
   <!-- Radar + výstrahy -->
   <div class="col" style="grid-column:3;grid-row:3">
+    <section class="card timer" style="flex:0 0 auto">
+      <div class="label">Časovač</div>
+      <div class="t-row">
+        <input id="tLabel" placeholder="Co? (zavolat zpět…)" maxlength="40">
+      </div>
+      <div class="t-row">
+        <button data-min="5">5</button><button data-min="10">10</button><button data-min="15">15</button><button data-min="30">30</button><button data-min="60">60</button>
+        <input id="tMin" type="number" min="1" max="600" placeholder="min"><button id="tGo" class="go">▶</button>
+      </div>
+      <div id="tList"></div>
+      <div class="sw"><span class="label" style="margin:0">Stopky</span><span class="num sw-t" id="swT">00:00.0</span>
+        <button id="swStart">▶</button><button id="swReset">↺</button></div>
+    </section>
     <section class="card radar">
       <div class="label">Radar srážek</div>
       <div class="fallback">Radar se nenačetl (windy.com může být blokované).<br>Otevři ručně: chmi.cz → Radarové snímky</div>
@@ -237,6 +275,7 @@
     </section>
   </div>
 </div>
+<div id="alarm" class="alarm"><div><div class="a-ic">⏰</div><div id="alarmTxt"></div><div class="a-sub">klikni kamkoliv pro zavření</div></div></div>
 <button class="fs" id="fsBtn" title="Celá obrazovka (klávesa F)">⛶ celá obrazovka</button>
 <button class="fs cfg" id="cfgBtn" title="Nastavení hlídaných služeb">⚙ nastavení</button>
 <div class="modal" id="cfgModal"><div class="box">
@@ -790,6 +829,110 @@ function loadRadar(){
     + `&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1&_=${Date.now()}`;
 }
 
+/* ===================== ČASOVAČ + STOPKY ===================== */
+let timers = store.get("timers", []);
+let audioCtx = null;
+function beep(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = audioCtx.currentTime;
+    for (let k = 0; k < 6; k++){
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = k % 2 ? 880 : 1175; o.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(0.25, t0 + k*0.25); g.gain.exponentialRampToValueAtTime(0.001, t0 + k*0.25 + 0.22);
+      o.start(t0 + k*0.25); o.stop(t0 + k*0.25 + 0.23);
+    }
+  }catch(e){}
+}
+function fmtRem(ms){ const s = Math.max(0, Math.ceil(ms/1000)), h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
+  return h ? `${h}:${pad(m)}:${pad(x)}` : `${pad(m)}:${pad(x)}`; }
+function addTimer(min){
+  min = +min; if (!min || min <= 0) return;
+  try{ audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); }catch(e){}
+  const label = $("tLabel").value.trim() || `${min} min`;
+  timers.push({ id: Date.now(), label, end: Date.now() + min*60000 });
+  store.set("timers", timers); $("tLabel").value = ""; $("tMin").value = ""; renderTimers();
+}
+let alarmQueue = [], titleBlink = null;
+function fireAlarm(t){
+  alarmQueue.push(t.label);
+  $("alarmTxt").textContent = alarmQueue.join(" · ");
+  $("alarm").classList.add("on"); beep();
+  if (!titleBlink){ let on = false; titleBlink = setInterval(() => { document.title = (on = !on) ? "⏰ " + alarmQueue[0] : "Dashboard"; }, 800); }
+}
+$("alarm").onclick = () => { $("alarm").classList.remove("on"); alarmQueue = []; clearInterval(titleBlink); titleBlink = null; document.title = "Dashboard"; };
+let lastTimerSig = "";
+function renderTimers(){
+  const now = Date.now();
+  const due = timers.filter(t => t.end <= now);
+  if (due.length){ due.forEach(fireAlarm); timers = timers.filter(t => t.end > now); store.set("timers", timers); }
+  if (alarmQueue.length && Math.floor(now/1000) % 5 === 0) beep();
+  const sig = timers.map(t => t.id).join();
+  if (sig !== lastTimerSig){
+    lastTimerSig = sig;
+    $("tList").innerHTML = timers.sort((a,b) => a.end - b.end).map(t => {
+      const e = new Date(t.end);
+      return `<div class="t-item" data-id="${t.id}"><span>${esc(t.label)} <span class="muted small">· ${pad(e.getHours())}:${pad(e.getMinutes())}</span></span>`
+        + `<span><span class="rem"></span><button class="x" title="Zrušit">✕</button></span></div>`; }).join("");
+  }
+  document.querySelectorAll(".t-item").forEach(el => {
+    const t = timers.find(x => x.id == el.dataset.id); if (t) el.querySelector(".rem").textContent = fmtRem(t.end - now);
+  });
+}
+document.querySelectorAll(".timer button[data-min]").forEach(b => b.onclick = () => addTimer(b.dataset.min));
+$("tGo").onclick = () => addTimer($("tMin").value);
+$("tMin").addEventListener("keydown", e => { if (e.key === "Enter") addTimer($("tMin").value); });
+$("tLabel").addEventListener("keydown", e => { if (e.key === "Enter") addTimer($("tMin").value || 15); });
+$("tList").addEventListener("click", e => {
+  if (!e.target.classList.contains("x")) return;
+  const id = e.target.closest(".t-item").dataset.id; timers = timers.filter(t => t.id != id); store.set("timers", timers); renderTimers();
+});
+// stopky
+let sw = store.get("stopwatch", { run: false, start: 0, acc: 0 });
+function swNow(){ return sw.acc + (sw.run ? Date.now() - sw.start : 0); }
+function renderSw(){
+  const ms = swNow(), s = Math.floor(ms/1000), h = Math.floor(s/3600);
+  $("swT").textContent = (h ? h + ":" : "") + `${pad(Math.floor(s%3600/60))}:${pad(s%60)}.${Math.floor(ms%1000/100)}`;
+  $("swStart").textContent = sw.run ? "⏸" : "▶";
+}
+$("swStart").onclick = () => { if (sw.run){ sw.acc = swNow(); sw.run = false; } else { sw.start = Date.now(); sw.run = true; } store.set("stopwatch", sw); renderSw(); };
+$("swReset").onclick = () => { sw = { run: false, start: 0, acc: 0 }; store.set("stopwatch", sw); renderSw(); };
+setInterval(() => { renderTimers(); if (sw.run) renderSw(); }, 100);
+renderTimers(); renderSw();
+
+/* ===================== TIP DNE ===================== */
+const TIPS = [
+ ["Win+Shift+S","výřez obrazovky do schránky"],["Win+V","historie schránky (zapnout v Nastavení → Systém → Schránka)"],
+ ["Win+.","emoji a speciální znaky"],["Win+L","zamknout PC – vždy, když odcházíš od stolu"],["Win+Shift+←/→","přesune okno na druhý monitor"],
+ ["Win+Ctrl+Shift+B","restart grafického ovladače, když zamrzne obraz"],["Ctrl+Shift+Esc","Správce úloh rovnou, bez Ctrl+Alt+Del"],
+ ["Ctrl+Shift+T","v prohlížeči znovu otevře zavřenou kartu"],["Ctrl+Alt+End","v RDP relaci funguje jako Ctrl+Alt+Del"],
+ ["Win+X","rychlé menu: Správa počítače, Terminál, Síťová připojení…"],["Win+R → shell:startup","složka Po spuštění aktuálního uživatele"],
+ ["Win+R → shell:common startup","složka Po spuštění pro všechny uživatele"],["ipconfig /flushdns","vyčistí DNS cache, když se jméno překládá na starou IP"],
+ ["gpupdate /force","okamžitě aplikuje skupinové politiky"],["gpresult /r","které GPO se na uživatele a PC opravdu aplikovaly"],
+ ["sfc /scannow","kontrola a oprava systémových souborů"],["DISM /Online /Cleanup-Image /RestoreHealth","oprava obrazu Windows, pusť před sfc"],
+ ["Test-NetConnection server -Port 443","v PowerShellu ověří, jestli je port otevřený"],["netstat -ano | findstr :3389","kdo poslouchá nebo se připojuje na port"],
+ ["whoami /groups","ve kterých skupinách je přihlášený uživatel"],["klist purge","smaže Kerberos lístky – pomůže po změně skupin bez odhlášení"],
+ ["quser /server:NAZEV","kdo je přihlášený na serveru"],["systeminfo | findstr /C:\"Boot Time\"","kdy byl PC naposledy spuštěn"],
+ ["shutdown /r /t 0","okamžitý restart"],["shutdown /r /o /t 0","restart do pokročilých možností spuštění"],
+ ["msinfo32","kompletní info o HW a systému"],["eventvwr.msc","Prohlížeč událostí – vždy první místo při záhadné chybě"],
+ ["printmanagement.msc","správa tiskáren a ovladačů na jednom místě"],["ncpa.cpl","Síťová připojení přímo"],["appwiz.cpl","Programy a funkce (odinstalace)"],
+ ["sysdm.cpl","Vlastnosti systému – jméno PC, doména, proměnné"],["lusrmgr.msc","místní uživatelé a skupiny"],["certmgr.msc","certifikáty aktuálního uživatele"],
+ ["Ctrl+Shift+C","v Průzkumníku Win 11 zkopíruje cestu k souboru"],["Shift+pravé tlačítko","v Průzkumníku ukáže rozšířenou nabídku"],
+ ["Shift+F10","v instalaci Windows otevře příkazový řádek"],["winver","přesná verze a build Windows"],["arp -a","IP a MAC adresy v místní síti"],
+ ["tracert / pathping","kde po cestě se ztrácí pakety"],["net use","namapované síťové disky a jejich cesty"],
+ ["Get-Printer | ft Name,PortName","PowerShell: seznam tiskáren s porty"],["Win+P","přepínání monitorů/projektoru"],
+ ["Win+Ctrl+D","nová virtuální plocha (Win+Ctrl+←/→ přepínání)"],["Ctrl+Shift+Del","v prohlížeči vymazání cache a cookies"],
+ ["Ctrl+F5","obnovení stránky bez cache"],["mstsc /admin","RDP na administrativní relaci serveru"],
+ ["Tip","než něco restartuješ na serveru, napiš do týmu – ušetří to telefonáty"],["Tip","fotka chybové hlášky od uživatele ušetří 10 minut vyptávání"],
+ ["Tip","„Zkoušel jste to vypnout a zapnout?“ – a opravdu restartovat, ne jen odhlásit"],["Tip","zapisuj si opakované problémy – z nich vznikne návod nebo skript"],
+];
+function renderTip(){
+  const d = new Date(), doy = Math.floor((d - new Date(d.getFullYear(),0,0)) / 864e5);
+  const [k, v] = TIPS[(doy + d.getFullYear()) % TIPS.length];
+  $("tip").innerHTML = `💡 <b>${esc(k)}</b> – ${esc(v)}`; $("tip").title = `${k} – ${v}`;
+}
+renderTip(); setInterval(renderTip, 60*60e3);
+
 /* ===================== POZNÁMKY ===================== */
 const notes = $("notes");
 notes.value = store.get("notes", "");
@@ -802,7 +945,7 @@ function toggleFS(){
 }
 $("fsBtn").onclick = toggleFS;
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape") $("cfgModal").classList.remove("open");
+  if (e.key === "Escape"){ $("cfgModal").classList.remove("open"); if ($("alarm").classList.contains("on")) $("alarm").click(); }
   if ((e.key === "f" || e.key === "F") && !["TEXTAREA","INPUT"].includes(e.target.tagName)) toggleFS();
 });
 
