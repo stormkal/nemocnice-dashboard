@@ -47,18 +47,13 @@
   .w-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:.6vw;margin-top:1.6vh}
   .w-meta div{background:var(--card2);border-radius:10px;padding:.9vh .6vw}
   .w-meta b{display:block;white-space:nowrap;font-size:clamp(13px,1vw,20px);font-weight:600;margin-top:.2vh}
-  .w-hours{display:grid;grid-template-columns:repeat(8,1fr);gap:.4vw;margin-top:2vh;text-align:center;flex:1;max-height:22vh}
-  .w-hours>div{display:flex;flex-direction:column;justify-content:center}
-  .w-hours div{padding:.7vh 0;border-radius:8px;background:var(--card2)}
-  .w-hours .h{font-size:clamp(11px,.75vw,15px);color:var(--muted)}
-  .w-hours .i{font-size:clamp(16px,1.4vw,30px);margin:.3vh 0}
-  .w-hours .t{font-size:clamp(12px,.95vw,19px);font-weight:600}
-  .w-hours .p{font-size:clamp(10px,.68vw,13px);color:var(--accent);min-height:1.2em}
-  .w-days{display:grid;grid-template-columns:repeat(3,1fr);gap:.6vw;margin-top:auto;padding-top:1.4vh}
-  .w-days>div{background:var(--card2);border-radius:10px;padding:.9vh .5vw;display:flex;flex-direction:column;align-items:center;gap:.2vh;text-align:center}
-  .w-days .i{font-size:clamp(20px,1.9vw,40px)}
+  .w-days{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:.5vw;flex:1;min-height:0;margin-top:1.2vh;margin-bottom:1.2vh}
+  .w-days>div{background:var(--card2);border-radius:10px;padding:.4vh .4vw;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;overflow:hidden;text-align:center;min-height:0}
+  .w-days .x{font-size:clamp(10px,.7vw,14px);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .w-days .i{font-size:clamp(18px,1.7vw,36px);line-height:1.05}
   .w-days .d{font-size:clamp(12px,.85vw,17px);color:var(--muted)}
-  .w-days .t{font-size:clamp(13px,1vw,20px);font-weight:600}
+  .w-days .t{font-size:clamp(14px,1.15vw,24px);font-weight:600;white-space:nowrap}
+  .w-days .d b{color:var(--text);font-weight:600}
   .w-upd{position:absolute;right:1.2vw;bottom:.6vh;font-size:11px;color:#56627a}
   .err{color:var(--amber);margin-top:2vh}
 
@@ -526,9 +521,9 @@ async function fetchWeather(loc){
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}`
     + `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,is_day,precipitation`
     + `&hourly=temperature_2m,weather_code,precipitation_probability,is_day,precipitation,snowfall,wind_gusts_10m`
-    + `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max`
+    + `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,precipitation_sum,wind_gusts_10m_max`
     + `&minutely_15=precipitation&forecast_minutely_15=12`
-    + `&timezone=Europe%2FPrague&forecast_days=4&wind_speed_unit=kmh`;
+    + `&timezone=Europe%2FPrague&forecast_days=7&wind_speed_unit=kmh`;
   const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json();
 }
 // záloha: wttr.in → převod do stejného tvaru jako Open-Meteo
@@ -562,19 +557,16 @@ async function fetchWttr(loc){
 
 function renderWeather(el, loc, data, ts, stale){
   const c = data.current, d = data.daily, h = data.hourly;
-  let i0 = h.time.findIndex(t => t > c.time); if (i0 < 0) i0 = 0;
-  let hours = "";
-  for (let k = 0; k < 8; k++){
-    const i = i0 + k; if (!h.time[i]) break;
-    const p = h.precipitation_probability[i];
-    hours += `<div><div class="h">${h.time[i].slice(11,13)}h</div><div class="i">${wIcon(h.weather_code[i], h.is_day[i])}</div>`
-      + `<div class="t num">${r0(h.temperature_2m[i])}°</div><div class="p">${p >= 20 ? p + " %" : ""}</div></div>`;
-  }
   let days = "";
-  for (let k = 1; k <= 3 && d.time[k]; k++){
+  for (let k = 1; k <= 6 && d.time[k]; k++){
     const dt = new Date(d.time[k] + "T12:00");
-    days += `<div><div class="d">${DNY_KR[dt.getDay()]} ${dt.getDate()}. ${dt.getMonth()+1}.</div><div class="i">${wIcon(d.weather_code[k])}</div>`
-      + `<div class="t num" style="white-space:nowrap">${r0(d.temperature_2m_max[k])}° <span class="muted">/ ${r0(d.temperature_2m_min[k])}°</span></div></div>`;
+    const pp = d.precipitation_probability_max?.[k], ps = d.precipitation_sum?.[k], wg = d.wind_gusts_10m_max?.[k];
+    const name = k === 1 ? "Zítra" : DNY[dt.getDay()].replace(/^./, c => c.toUpperCase());
+    days += `<div><div class="d"><b>${name}</b> ${dt.getDate()}. ${dt.getMonth()+1}.</div><div class="i">${wIcon(d.weather_code[k])}</div>`
+      + `<div class="t num">${r0(d.temperature_2m_max[k])}° <span class="muted">/ ${r0(d.temperature_2m_min[k])}°</span></div>`
+      + `<div class="x">${wText(d.weather_code[k])}</div>`
+      + `<div class="x num">${pp != null ? `☔ ${pp} %` : ""}${ps >= 0.1 ? ` · ${ps.toFixed(1).replace(".", ",")} mm` : ""}</div>`
+      + `<div class="x num">${wg != null ? `💨 nárazy ${r0(wg)} km/h` : ""}</div></div>`;
   }
   const sr = d.sunrise[0].slice(11,16), ss = d.sunset[0].slice(11,16);
   const t = new Date(ts);
@@ -594,7 +586,6 @@ function renderWeather(el, loc, data, ts, stale){
       <div><span class="muted">Srážky dnes</span><b class="num">${d.precipitation_probability_max[0] ?? 0} %</b></div>
     </div>
     ${nowcast(data)}
-    <div class="w-hours">${hours}</div>
     <div class="w-days">${days}</div>
     <div class="w-upd">${stale ? "⚠ offline · " : ""}${data._src || "open-meteo"} · aktualizováno ${pad(t.getHours())}:${pad(t.getMinutes())}</div>`;
 }
