@@ -967,14 +967,27 @@ const JOKES = [
  "„Můžete se mi připojit přes TeamViewer?“ – „Jaké máte ID?“ – „Kde ho najdu?“ – „…“",
  "Na serveru je všechno v pořádku. Řekl to monitoring, který spadl včera.",
 ];
+// Vtipy z GitHubu (stormkal/nemocnice-dashboard → vtipy.json), záloha = vestavěné
+let remoteJokes = store.get("jokes_remote", null);
+async function loadJokes(){
+  const urls = [`https://raw.githubusercontent.com/${GH_STATUS_REPO}/main/vtipy.json?t=${Date.now()}`,
+                `https://cdn.jsdelivr.net/gh/${GH_STATUS_REPO}@main/vtipy.json`];
+  for (const u of urls){
+    try{ const r = await fetch(u, { cache: "no-store" }); if (!r.ok) continue;
+      const j = await r.json(); if (Array.isArray(j.jokes) && j.jokes.length){ remoteJokes = j.jokes; store.set("jokes_remote", remoteJokes); renderTip(); return; } }catch(e){}
+  }
+}
 function renderTip(){
   const d = new Date(), doy = Math.floor((d - new Date(d.getFullYear(),0,0)) / 864e5);
   const [k, v] = TIPS[(doy + d.getFullYear()) % TIPS.length];
   $("tip").innerHTML = `💡 <span class="lbl">Tip dne:</span> <b>${esc(k)}</b> – ${esc(v)}`; $("tip").title = `Tip dne: ${k} – ${v}`;
-  const j = JOKES[(doy * 7 + d.getFullYear()) % JOKES.length];
-  $("joke").innerHTML = `😄 <span class="lbl">Vtip dne:</span> ${esc(j)}`; $("joke").title = `Vtip dne: ${j}`;
+  const list = (remoteJokes && remoteJokes.length) ? remoteJokes : JOKES;
+  const j = list[(doy * 7 + d.getFullYear()) % list.length];
+  $("joke").innerHTML = `😄 <span class="lbl">Vtip dne:</span> ${esc(j)}`;
+  $("joke").title = `Vtip dne: ${j}\n(${list === JOKES ? "vestavěné vtipy" : "vtipy z GitHubu"}, celkem ${list.length})`;
 }
 renderTip(); setInterval(renderTip, 60*60e3);
+loadJokes(); setInterval(loadJokes, 6*60*60e3);
 
 /* ===================== KRYPTO ===================== */
 const fmtCZK = v => Math.round(v).toLocaleString("cs-CZ") + " Kč";

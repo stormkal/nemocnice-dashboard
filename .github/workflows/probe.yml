@@ -1,9 +1,0 @@
-name: probe
-on: push
-jobs:
-  p:
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          curl -sS "https://v2.jokeapi.dev/joke/Any?lang=cs&safe-mode&amount=10" | head -c 3000; echo
-          curl -sS "https://v2.jokeapi.dev/info" | python3 -c "import json,sys;d=json.load(sys.stdin);print(json.dumps(d.get('jokes',{}).get('idRange',{}),ensure_ascii=False));print(d.get('jokes',{}).get('safeJokes'))"
