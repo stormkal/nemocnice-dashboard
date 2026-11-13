@@ -3,22 +3,18 @@
 
 $Servers = [ordered]@{
   'NVMEDICALC1'       = '10.196.2.66'
-  'NVMEDICALC2'       = '10.196.2.67'
   'NVMEDICALCAPP1'    = '10.196.2.68'
   'AmisPACS'          = '10.196.2.69'
   'eGateway - Mindray'= '10.196.2.70'
-  'ISAC'              = '10.196.2.71'
   'PACS plovoucí'     = '10.196.13.2'
   'PACS 1'            = '10.196.13.3'
   'PACS 2'            = '10.196.13.4'
   'ePACS'             = '10.196.13.5'
-  'eHealth'           = '10.196.13.6'
-  'ORCZ PACS 1'       = '10.196.13.7'
   'ORCZ PACS 2'       = '10.196.13.8'
   'ORCZ PACS 3'       = '10.196.13.9'
 }
 # Servery, na které z naší sítě nejde ping (ICMP jen z MGMT) – hlídají se přes TCP port
-$TcpOnly   = @('10.196.2.67', '10.196.2.71', '10.196.13.6', '10.196.13.7')
+$TcpOnly   = @()
 $TcpPorts  = @(3389, 445, 135, 139, 80, 443, 104, 11112, 22, 1433, 1521, 8080, 8443, 5985)
 $TcpTimeoutMs = 1500
 $RediscoverMin = 10    # jak často znovu hledat port u serverů, kde se žádný nenašel
