@@ -740,9 +740,12 @@ function renderServices(){
   if (pingData){
     const hs = pingData.hosts || [], age = (Date.now() - new Date(pingData.updated)) / 1000;
     if (age > 120) rows.push({ lvl: "warn", name: "Ping monitor neaktualizuje", right: `poslední ${ago(pingData.updated)}` });
-    hs.filter(h => !h.ok).forEach(h => rows.push({ lvl: "bad", name: `${h.name} · ${h.ip}`, right: `neodpovídá${h.since ? " · od " + ago(h.since) : ""}` }));
-    hs.filter(h => h.ok && h.ms >= 200).forEach(h => rows.push({ lvl: "warn", name: `${h.name} · ${h.ip}`, right: `pomalý ${h.ms} ms` }));
-    pingTxt = `ping ${hs.filter(h => h.ok).length}/${hs.length} serverů`;
+    const how = h => h.method === "tcp" ? ` (TCP ${h.port})` : "";
+    hs.filter(h => !h.ok).forEach(h => rows.push({ lvl: "bad", name: `${h.name} · ${h.ip}${how(h)}`, right: `neodpovídá${h.since ? " · od " + ago(h.since) : ""}` }));
+    hs.filter(h => h.ok && !h.unknown && h.ms >= 200).forEach(h => rows.push({ lvl: "warn", name: `${h.name} · ${h.ip}${how(h)}`, right: `pomalý ${h.ms} ms` }));
+    const known = hs.filter(h => !h.unknown), unk = hs.filter(h => h.unknown);
+    pingTxt = `servery ${known.filter(h => h.ok).length}/${known.length}`;
+    if (unk.length) pingTxt += ` · nelze ověřit: ${unk.map(h => h.name).join(", ")}`;
   } else if (pingMissing){
     const dir = decodeURIComponent(location.pathname).replace(/^\/([A-Za-z]:)/, "$1").replace(/[^\/]*$/, "").replace(/\//g, "\\");
     pingTxt = location.protocol === "file:" ? `ping.js nenalezen ve složce ${dir} (spusť start-ping.cmd)` : "ping funguje jen při otevření dashboard.html ze složky";
