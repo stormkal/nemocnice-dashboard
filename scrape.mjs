@@ -17,15 +17,20 @@ function noteAfter(L, i) {
   return "";
 }
 
-// eZdraví: každá služba má štítek "V pořádku" / "Ke sledování" / …
+// eZdraví: řádek "Název<TAB>verze<TAB>URL", na dalším řádku stav (V pořádku / Ke sledování / Problém / …)
 function parseEzdravi({ text }) {
-  const L = lines(text);
-  const ST = /^(v pořádku|ke sledování|nedostupn\S*|výpadek|omezen\S*|mimo provoz|porucha|degrad\S*|nefunkční|odstávka)$/i;
+  const raw = text.split("\n").map(s => s.trim()).filter(Boolean);
   const items = [];
-  L.forEach((l, i) => { if (ST.test(l)) items.push({ name: nameBefore(L, i, ST), status: l, note: noteAfter(L, i) }); });
-  const issues = items.filter(x => !/^v pořádku$/i.test(x.status))
-    .map(x => ({ ...x, level: /ke sledování/i.test(x.status) ? "warn" : "bad" }));
-  return { checked: items.length, issues };
+  raw.forEach((l, i) => {
+    if (!/https?:\/\//.test(l) || !/\t/.test(l)) return;
+    const [name, ver] = l.split("\t").map(x => x.trim());
+    const status = (raw[i + 1] || "").replace(/\s+/g, " ");
+    if (!status || /https?:\/\//.test(status) || status.length > 40) return;
+    const note = noteAfter(raw, i + 1);
+    const level = /^v pořádku$/i.test(status) ? "ok" : /ke sledování/i.test(status) ? "warn" : "bad";
+    items.push({ name: `${name}${ver ? " " + ver : ""}`, status, level, note });
+  });
+  return { checked: items.length, issues: items.filter(x => x.level !== "ok") };
 }
 
 // ČSSZ: stavy V POŘÁDKU / VÝSKYT CHYB / MNOHO CHYB (legendu přeskakujeme)
