@@ -63,9 +63,9 @@ function parseEpreskripce({ text }) {
 }
 
 const SOURCES = [
-  { id: "cssz", name: "ČSSZ", url: "https://www.cssz.gov.cz/status.html", parse: parseCssz },
-  { id: "ezdravi", name: "eZdraví", url: "https://www.ezdravi.gov.cz/katalog-sluzeb/dostupnost", parse: parseEzdravi },
-  { id: "epreskripce", name: "eRecept", url: "https://epreskripce.gov.cz/", parse: parseEpreskripce },
+  { id: "cssz", name: "ČSSZ", url: "https://www.cssz.gov.cz/status.html", parse: parseCssz, waitFor: "Stav platný" },
+  { id: "ezdravi", name: "eZdraví", url: "https://www.ezdravi.gov.cz/katalog-sluzeb/dostupnost", parse: parseEzdravi, waitFor: "api.csez.gov.cz" },
+  { id: "epreskripce", name: "eRecept", url: "https://epreskripce.gov.cz/", parse: parseEpreskripce, waitFor: "STAV SYSTÉMU" },
 ];
 
 fs.mkdirSync("out/debug", { recursive: true });
@@ -84,7 +84,11 @@ for (const s of SOURCES) {
   try {
     const resp = await page.goto(s.url, { waitUntil: "domcontentloaded", timeout: 60000 });
     try { await page.waitForLoadState("networkidle", { timeout: 15000 }); } catch {}
-    await page.waitForTimeout(4000);
+    if (s.waitFor) {
+      try { await page.waitForFunction(t => document.body && document.body.innerText.toLowerCase().includes(t.toLowerCase()), s.waitFor, { timeout: 45000 }); }
+      catch { /* obsah se nenačetl – parse to vyhodnotí jako „nelze ověřit“ */ }
+    }
+    await page.waitForTimeout(2000);
     const text = await page.evaluate(() => document.body.innerText);
     fs.writeFileSync(`out/debug/${s.id}.txt`, text);
     fs.writeFileSync(`out/debug/${s.id}-xhr.json`, JSON.stringify(xhr, null, 1));
