@@ -98,8 +98,9 @@
   .svc.warn{color:var(--amber);text-decoration:none}
   .svc .note{grid-column:2/4;font-size:clamp(10px,.7vw,13px);color:var(--muted);margin-top:-.3vh}
   .zone-h{display:flex;justify-content:space-between;align-items:baseline;gap:2vw}
-  .zone-h .tip{font-size:clamp(11px,.78vw,15px);font-weight:400;letter-spacing:0;text-transform:none;color:var(--muted);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .zone-h .tip{flex:1 1 0;font-size:clamp(11px,.74vw,15px);font-weight:400;letter-spacing:0;text-transform:none;color:var(--muted);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;cursor:help}
+  .zone-h .tip .lbl{color:var(--text);font-weight:600}
   .zone-h .tip b{color:var(--accent);font-weight:600}
   .timer{padding:1.1vh 1vw}
   .timer .t-row{display:flex;gap:.3vw;margin-top:.6vh;flex-wrap:wrap}
@@ -187,7 +188,7 @@
 <body>
 <div class="grid">
 
-  <div class="zone-h work" style="grid-column:1/4;grid-row:1"><span>🏥 Nemocnice Vrchlabí</span><span class="tip" id="tip"></span></div>
+  <div class="zone-h work" style="grid-column:1/4;grid-row:1"><span style="white-space:nowrap">🏥 Nemocnice Vrchlabí</span><span class="tip" id="tip"></span><span class="tip" id="joke"></span></div>
   <div class="zone-h kal" style="grid-column:4;grid-row:1">Kalrox</div>
 
   <!-- Praha + směna -->
@@ -933,10 +934,54 @@ const TIPS = [
  ["Tip","než něco restartuješ na serveru, napiš do týmu – ušetří to telefonáty"],["Tip","fotka chybové hlášky od uživatele ušetří 10 minut vyptávání"],
  ["Tip","„Zkoušel jste to vypnout a zapnout?“ – a opravdu restartovat, ne jen odhlásit"],["Tip","zapisuj si opakované problémy – z nich vznikne návod nebo skript"],
 ];
+const JOKES = [
+ "Existuje 10 typů lidí: ti, kteří rozumí dvojkové soustavě, a ti, kteří ne.",
+ "Kolik ajťáků je potřeba na výměnu žárovky? Žádný – to je hardwarový problém.",
+ "Restart vyřeší 90 % problémů. Na zbylých 10 % pomůže druhý restart.",
+ "Uživatel: „Nic jsem nedělal.“ Log: 47 změn nastavení.",
+ "Heslo musí mít aspoň 8 znaků, tak jsem zvolil „SněhurkaA7Trpaslíků“.",
+ "Pátek odpoledne. Na produkci nikdo nesahá.",
+ "Tiskárna vždycky pozná, když spěcháš.",
+ "Chyba 404: vtip nenalezen.",
+ "Dobrá zpráva: záloha existuje. Špatná: naposledy proběhla před třemi lety.",
+ "Cloud je jen počítač někoho jiného.",
+ "„Zkoušel jste to vypnout a zapnout?“ – „Ano.“ – „A teď doopravdy?“",
+ "Je to DNS. Vždycky je to DNS. I když to není DNS, je to DNS.",
+ "SQL dotaz přijde do baru, přistoupí ke dvěma stolům a zeptá se: „Můžu se k vám JOINout?“",
+ "Optimista: sklenice je z poloviny plná. Ajťák: sklenice je dvakrát větší, než je potřeba.",
+ "Problém je mezi židlí a klávesnicí.",
+ "Tiket: „Nefunguje nic.“ Priorita: kritická. Příloha: žádná.",
+ "„Rychlá oprava“ – nejdražší dvě slova v IT.",
+ "Pondělí: aktualizace Windows. Úterý: oprava aktualizace Windows.",
+ "Kabel byl vytažený. Diagnostika trvala dvě hodiny.",
+ "Práce v IT: 5 % opravování, 95 % vysvětlování, že to není chyba IT.",
+ "„Smazal jsem ikonku internetu. Smazal jsem internet?“",
+ "„Je to jen malá změna,“ řekl každý těsně před velkým výpadkem.",
+ "Programátor má koupit chleba, a když budou mít vejce, tak šest. Vrátí se se šesti chleby.",
+ "Nejlepší antivirus je zdravý rozum. Bohužel není v licenci.",
+ "Ctrl+C a Ctrl+V – dvě nejdůležitější klávesy v kariéře.",
+ "„Bolí to, když kliknu sem.“ – „Tak tam neklikejte.“",
+ "„U mě to funguje.“ – „Tak pošleme do provozu tvůj počítač.“",
+ "Uživatel volá, že nejde internet. Ve skutečnosti se mu jen zavřel prohlížeč.",
+ "Klávesa F1: nápověda, která ještě nikdy nikomu nepomohla.",
+ "„Můžete mi to poslat e-mailem?“ – „Volám vám, protože mi nejde e-mail.“",
+ "Wi-Fi heslo je na routeru. Router je pod stolem. Pod stolem je pavouk.",
+ "Proč ajťáci neradi chodí do přírody? Je tam moc bugů.",
+ "Nejbezpečnější počítač je vypnutý, odpojený a zakopaný. Uživatel by si stejně poradil.",
+ "„Mám zapnutý počítač, ale monitor je černý.“ – „Svítí na něm kontrolka?“ – „…moment.“",
+ "Kdo nedělá zálohy, bude je dělat. Hned po první havárii.",
+ "Teams se aktualizuje. Prosím čekejte. Navždy.",
+ "Programátor si dal do kávy cukr. Teď je to sweet code.",
+ "Unikátní heslo pro každý systém. Všechna na jednom žlutém lístečku na monitoru.",
+ "„Můžete se mi připojit přes TeamViewer?“ – „Jaké máte ID?“ – „Kde ho najdu?“ – „…“",
+ "Na serveru je všechno v pořádku. Řekl to monitoring, který spadl včera.",
+];
 function renderTip(){
   const d = new Date(), doy = Math.floor((d - new Date(d.getFullYear(),0,0)) / 864e5);
   const [k, v] = TIPS[(doy + d.getFullYear()) % TIPS.length];
-  $("tip").innerHTML = `💡 <b>${esc(k)}</b> – ${esc(v)}`; $("tip").title = `${k} – ${v}`;
+  $("tip").innerHTML = `💡 <span class="lbl">Tip dne:</span> <b>${esc(k)}</b> – ${esc(v)}`; $("tip").title = `Tip dne: ${k} – ${v}`;
+  const j = JOKES[(doy * 7 + d.getFullYear()) % JOKES.length];
+  $("joke").innerHTML = `😄 <span class="lbl">Vtip dne:</span> ${esc(j)}`; $("joke").title = `Vtip dne: ${j}`;
 }
 renderTip(); setInterval(renderTip, 60*60e3);
 
@@ -947,8 +992,8 @@ async function fetchCrypto(){
   try{ // živě: CoinGecko
     const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=czk,usd&include_24hr_change=true", { cache: "no-store" });
     if (r.ok){ const j = await r.json();
-      return { src: "CoinGecko", BTC: { czk: j.bitcoin.czk, usd: j.bitcoin.usd, ch: j.bitcoin.czk_24h_change },
-                               ETH: { czk: j.ethereum.czk, usd: j.ethereum.usd, ch: j.ethereum.czk_24h_change } }; }
+      return { src: "CoinGecko", BTC: { czk: j.bitcoin.czk, usd: j.bitcoin.usd, ch: j.bitcoin.usd_24h_change },
+                               ETH: { czk: j.ethereum.czk, usd: j.ethereum.usd, ch: j.ethereum.usd_24h_change } }; }
   }catch(e){}
   // záloha: denní data přes jsDelivr
   const day = d => new Date(Date.now() - d*864e5).toISOString().slice(0,10);
@@ -957,7 +1002,7 @@ async function fetchCrypto(){
   const px = (e, c) => ({ czk: e.czk / e[c], usd: e.usd / e[c] });
   const out = { src: "jsDelivr, denní" };
   for (const [k,c] of [["BTC","btc"],["ETH","eth"]]){
-    const p = px(now, c); p.ch = prev ? (p.czk / px(prev, c).czk - 1) * 100 : null; out[k] = p;
+    const p = px(now, c); p.ch = prev ? (p.usd / px(prev, c).usd - 1) * 100 : null; out[k] = p;
   }
   return out;
 }
@@ -967,7 +1012,7 @@ function renderCrypto(d, stale){
     const x = d[k], ch = x.ch;
     const chTxt = ch == null ? "" : `<span class="${ch > 0 ? "down" : ch < 0 ? "up" : "muted"}">${ch > 0 ? "▲" : ch < 0 ? "▼" : "•"} ${Math.abs(ch).toFixed(1)} %</span> · `;
     return `<div class="cr"><span class="cur"><span class="muted" style="display:inline-block;width:1.1em">${ic[k]}</span>${k}</span>`
-      + `<span></span><span class="val num">${fmtCZK(x.czk)}</span><span class="sub">${chTxt}${fmtUSD(x.usd)}</span></div>`;
+      + `<span></span><span class="val num">${fmtUSD(x.usd)}</span><span class="sub">${chTxt}${fmtCZK(x.czk)}</span></div>`;
   }).join("");
   $("cryptoSrc").textContent = `· ${d.src}${stale ? " · ⚠ offline" : ""}`;
 }
