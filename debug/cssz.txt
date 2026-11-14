@@ -1,0 +1,60 @@
+ČESKÁ SPRÁVA SOCIÁLNÍHO ZABEZPEČENÍ
+Aktuální stav systému
+
+Aktuální stav systému poskytuje statistické informace o zpracování jednotlivých služeb za uplynulých 5 minut. Stav služby tedy nemusí odpovídat její aktuální funkčnosti – může být do značné míry ovlivněn voláním ze strany klientů.
+
+Vysvětlení stavů služeb:
+
+V POŘÁDKU – za posledních 5 minut nebylo identifikováno nestandardní chování služeb.
+VÝSKYT CHYB – zvýšené množství chybových volání za posledních 5 minut. To nemusí znamenat nefunkčnost systémů na straně ČSSZ – může jít pouze o problém na straně volajícího (např. při posílání nevalidního požadavku). Pokud v danou chvíli nekomunikuje žádný další klient, služba se může jevit jako chybná.
+MNOHO CHYB – většina klientských volání za posledních 5 minut končí chybou. To také nemusí znamenat nefunkčnost systémů na straně ČSSZ – může jít pouze o problém na straně volajícího (např. při posílání nevalidního požadavku). Pokud v danou chvíli nekomunikuje žádný další klient, služba se může jevit jako chybná.
+Stav platný k 14. 11. 2026 11:50:00
+Služby eNeschopenky
+Dostupnost B2B služeb
+IkreDpnNotifikace
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+IkreDpnPripravPodani
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+IkreDpnSpravaIcpe
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+IkreDpnVratAdresuPojistence
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+IkreDpnVratDetailPripadu
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+IkreDpnVratNeukonceneDpn
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+IkreDpnVratPodani
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+IkreDpnVratPripady
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+IkreDpnVratZamestnavatelePojistence
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+Služby pro zaměstnavatele
+Dostupnost rozhraní APEP
+/vrep/poll
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+/vrep/submission
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+/vrep/ws/public.svc
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+Interní zpracování podání
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+ePortál
+Dostupnost stránek ePortálu
+V POŘÁDKU
+NORMÁLNÍ ODEZVY
+ZPĚT
+© Česká správa sociálního zabezpečení

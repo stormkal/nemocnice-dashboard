@@ -1,0 +1,108 @@
+PŘEJÍT NA HLAVNÍ OBSAH
+Vyhledávání na webu…
+STATISTIKA
+PŘÍSTUPY
+O ERECEPTU
+PACIENT
+ODBORNÍ PRACOVNÍCI
+DODAVATEL
+ČASTO KLADENÉ OTÁZKY
+STAV SYSTÉMU BEZ OMEZENÍ
+eRecept – oficiální stránky
+Informace pro lékaře, lékárníky, pacienty, pojišťovny a dodavatele zdravotnických softwarů
+Lékový záznam
+ePoukaz
+Přeshraniční eRecept
+Pacientská aplikace
+Google Play
+App Store
+Aplikace eRecept
+Užitečné odkazy
+Video návody
+Často kladené otázky
+Formuláře
+Aktivní zahraniční lékárny
+Projekty NPO
+Ocenění
+Životní situace
+Videospoty
+Novinky
+Zobrazit vše
+
+10. 11. 2026
+
+Předpis ePoukazů na „Párové orgány“
+
+Při vytváření nebo úpravě ePoukazu lze vyplnit údaj „Párový orgán“, kterým se určuje, zda je zdravotnický prostředek předepsán pro levou stranu, pravou stranu nebo obě strany těla. U vybraných…
+
+29. 10. 2026
+
+Podpora jednoznačného ztotožnění pacientů v lékařských a lékárenských…
+
+Státní ústav pro kontrolu léčiv (SÚKL) upozorňuje výrobce informačních systémů používaných poskytovateli zdravotních služeb a lékárnami na specifické situace, které mohou komplikovat jednoznačné…
+
+23. 10. 2026
+
+Portál Opendata SÚKL je dostupný na nové webové adrese
+
+Státní ústav pro kontrolu léčiv (SÚKL) informuje uživatele o změně webové adresy portálu Opendata, který nově naleznou výhradně na adrese https://opendata.sukl.gov.cz. Změna domény souvisí s…
+
+O eReceptu
+
+eRecept je recept vystavený v elektronické podobě. Lékařem vystavený eRecept je uložen do tzv. Centrálního úložiště elektronických receptů (CÚER).
+
+Každému eReceptu je přidělen unikátní identifikátor. V lékárně pak lékárník načte identifikátor eReceptu a pokud je eRecept v CÚER nalezen, vydá předepsaný lék pacientovi. Informace o výdeji léku se zároveň zapíše do CÚER.
+
+V rámci programu slavnostního setkání 21. ročníku konference ISSS/V4DIS bylo uděleno ocenění Český zavináč 2018 týmu oddělení eReceptu, jenž v rámci Státního ústavu pro kontrolu léčiv pracoval na realizaci projektu eRecept.
+
+Projekt eRecept zvítězil v 16. ročníku soutěže IT projekt roku 2018 pořádaném Českou asociací informačních technologií (CACIO). Odborná hodnotitelská komise spolu s Řídícím výborem CACIO oceňují projekt jako takový a současně vyslovují uznání jak tvůrci, tak uživateli projektu za dosažené výsledky.
+
+Na konferenci INMED pořádané společnosti EEZY Publishing s.r.o. v roce 2022 získal eRecept ocenění jako nejprospěšnější projekt v oblasti eHealth a digitalizace českého zdravotnictví.
+
+Kontakty
+Informační linka eRecept
+
+Provozní doba:
+
+Po – Čt od 7:00 do 17:00
+
+Pátek – od 7:00 do 16:00
+
+272 185 555
+erecept@sukl.gov.cz
+ÚŘEDNÍ DESKA
+POVINNĚ ZVEŘEJŇOVANÉ INFORMACE
+DÁLKOVÝ PŘÍSTUP
+PODATELNA/POKLADNA
+ELEKTRONICKÁ PODATELNA
+KONTAKTY
+SÚKL
+SPRÁVA ZÁKLADNÍCH REGISTRŮ
+DIGITÁLNÍ A INFORMAČNÍ AGENTURA
+MAPA STRÁNEK
+INFOLINKA
+272 185 555
+Po–Čt 7:00 až 17:00
+Pá 7:00 až 16:00
+
+Sledujte nás
+
+Odkaz se otevře na nové kartě
+ 
+Odkaz se otevře na nové kartě
+ 
+Odkaz se otevře na nové kartě
+ 
+Odkaz se otevře na nové kartě
+
+© 2026 SÚKL všechna práva vyhrazena
+
+Ochrana osobních údajů | Prohlášení o přístupnosti | Podmínky využívání služeb webové prezentace | Oznam.to | Odběr novinek | RSS | Nastavení cookies
+
+ZPĚT NAHORU
+
+Na této webové stránce používáme informace uložené ve vašem koncovém zařízení, tzv. soubory cookies, pro preferenční, analytické a marketingové účely. Kliknutím na "Nastavit cookies" můžete kdykoliv nastavit, které cookies a k jakým účelům chcete povolit. Další informace o používání cookies a zpracování osobních údajů můžete kdykoliv najít na podstránce Ochrana soukromí a zpracování osobních údajů.
+
+ODMÍTNOUT VŠECHNY
+NASTAVIT COOKIES
+POVOLIT VŠECHNY
