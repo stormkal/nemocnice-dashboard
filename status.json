@@ -1,0 +1,32 @@
+{
+ "updated": "2026-11-21T07:27:49.257Z",
+ "sources": {
+  "cssz": {
+   "name": "ČSSZ",
+   "url": "https://www.cssz.gov.cz/status.html",
+   "http": 200,
+   "ok": true,
+   "parsed": true,
+   "checked": 13,
+   "issues": []
+  },
+  "ezdravi": {
+   "name": "eZdraví",
+   "url": "https://www.ezdravi.gov.cz/katalog-sluzeb/dostupnost",
+   "http": 200,
+   "ok": true,
+   "parsed": false,
+   "checked": 0,
+   "issues": []
+  },
+  "epreskripce": {
+   "name": "eRecept",
+   "url": "https://epreskripce.gov.cz/",
+   "http": 200,
+   "ok": true,
+   "parsed": true,
+   "checked": 1,
+   "issues": []
+  }
+ }
+}
