@@ -1,0 +1,39 @@
+{
+ "updated": "2026-11-28T03:53:11.953Z",
+ "sources": {
+  "cssz": {
+   "name": "ČSSZ",
+   "url": "https://www.cssz.gov.cz/status.html",
+   "http": 200,
+   "ok": false,
+   "parsed": true,
+   "checked": 11,
+   "issues": [
+    {
+     "name": "ePortál: ePortál",
+     "status": "MNOHO CHYB",
+     "level": "bad",
+     "note": ""
+    }
+   ]
+  },
+  "ezdravi": {
+   "name": "eZdraví",
+   "url": "https://www.ezdravi.gov.cz/katalog-sluzeb/dostupnost",
+   "http": 200,
+   "ok": true,
+   "parsed": false,
+   "checked": 0,
+   "issues": []
+  },
+  "epreskripce": {
+   "name": "eRecept",
+   "url": "https://epreskripce.gov.cz/",
+   "http": 200,
+   "ok": true,
+   "parsed": true,
+   "checked": 1,
+   "issues": []
+  }
+ }
+}
